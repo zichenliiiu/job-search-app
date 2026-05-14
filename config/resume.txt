@@ -1,0 +1,29 @@
+Professional Experience
+
+Atlassian (B2B SaaS, IPO)
+Product Strategy and Business Operations | April 2025 – March 2026
+
+– Led engineering investment proposal with Product, Finance, and GTM leadership; built long-range business case and executive recommendation securing 8-digit multi-year funding commitment
+– Structured strategic customer proposal balancing technical requirements, commercial constraints, and delivery feasibility; resulted in 8-digit contract win with Atlassian CTO sponsorship
+– Built long-range growth models for 9-digit ARR business line, incorporating customer adoption propensity, technical roadmap dependencies, and unlock scenarios
+– Drove commercialization of 3 product launches across cost modeling, pricing & packaging, pipeline generation, early-access feedback loops, and operating readiness; portfolio reached 7-digit ARR in year one
+– Built monthly executive reporting and operating cadence covering 3 products using AI workflows, improving decision speed and accountability
+
+Gem (B2B SaaS, Series C, backed by Accel, Greylock, ICONIQ)
+Business Operations | October 2021 – April 2025
+
+– Automated C-suite and department head reporting cadence using SQL, Python notebooks, and AI workflows; surfaced growth bottlenecks and improved prioritization during 3x YoY growth
+– Led monthly strategic planning and prioritization sessions with C-suite; synthesized customer, market, and competitive signals that informed roadmap priorities, investment decisions, and organizational restructuring
+– Operated as a zero-to-one builder across 3 product launches, owning onboarding systems, lifecycle automation, billing operations, and GTM readiness from launch through scale
+
+McKinsey & Company
+Management Consultant | June 2019 – July 2021
+
+– Advised SVP of Sales at Fortune 100 company on customer segmentation, channel prioritization, and growth strategy; recommendations drove 18% revenue uplift
+– Managed 6 concurrent workstreams with 50+ stakeholders across enterprise transformation program, aligning cross-functional leaders on operating model redesign
+– Led sales technology transformation for Fortune 500 company, enabling ~300-person commercial organization on new tools, processes, and workflows
+
+Education
+Carnegie Mellon University                                                                                    
+Bachelor of Science with University Honors, Economics, 3.7/4.0 | 2015 – 2018
+Relevant coursework: Computer System and Organization, Operating Systems, Statistical Inference, Causal Inference, Machine Learning
