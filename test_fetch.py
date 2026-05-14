@@ -11,8 +11,12 @@ from datetime import datetime, timezone
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 from src.gmail_fetcher import GmailFetcher
+from src.database import create_tables, insert_jobs
 
 def main():
+    print("Ensuring database tables exist...")
+    create_tables()
+
     print("Authenticating with Gmail...")
     fetcher = GmailFetcher()
 
@@ -59,6 +63,10 @@ def main():
         json.dump(output, f, indent=2, default=serialize)
 
     print(f"Full output saved to: {out_path}")
+
+    print("\nSaving jobs to database...")
+    inserted = insert_jobs(jobs)
+    print(f"Saved {inserted} new jobs to Supabase ({len(jobs) - inserted} duplicates skipped)")
 
     fetcher.mark_last_batch_unread()
     print("Emails marked as unread for next test run.")
