@@ -10,14 +10,7 @@ Email-based job search digest with semantic matching.
 
 - [ ] **Manually verify fetcher captures all Google Alert results** — spot-check alert emails vs. fetcher output over the next few days to confirm no results are being missed
 
-- [ ] **Set up SendGrid (email delivery)**
-  1. Go to [sendgrid.com](https://sendgrid.com) → sign up (free tier = 100 emails/day)
-  2. **Settings → API Keys → Create API Key** (Full Access) → copy it
-  3. Paste into `.env` as `SENDGRID_API_KEY=...`
-  4. **Settings → Sender Authentication → Verify a Single Sender** (use the Gmail address you want to send FROM)
-  5. Make sure `RECIPIENT_EMAIL` in `.env` is set to your Gmail address
-
-- [ ] **Build `src/email_digest.py`** — query last 24h of jobs, send HTML digest via SendGrid
+- [ ] **Fine-tune ranking prompt** — iterate on `config/criteria.txt` and the system prompt in `src/ranker.py` based on results; check whether top/next-best thresholds (75/40) need adjusting
 
 ---
 
@@ -41,9 +34,8 @@ Jobs are then split into two tiers:
 - If Top Options is empty: send only Next Best with a note that nothing cleared the bar today.
 - If both are empty: skip sending (or send a brief "nothing new" note — TBD).
 
-### Files to build
+### Files
 - `config/resume.txt` — user-maintained
 - `config/criteria.txt` — user-maintained
-- `src/ranker.py` — calls Claude API, returns scored + tiered job list
-- `src/email_digest.py` — renders tiered results into HTML and sends via SendGrid
-
+- `src/ranker.py` — calls Claude API, returns scored + tiered job list ✅
+- `src/email_digest.py` — renders tiered results into HTML and sends via Gmail SMTP ✅

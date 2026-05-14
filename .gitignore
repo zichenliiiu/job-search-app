@@ -9,6 +9,10 @@ env/
 config/credentials.json
 config/token.json
 
+# Personal content
+config/resume.txt
+config/criteria.txt
+
 # Python
 __pycache__/
 *.py[cod]

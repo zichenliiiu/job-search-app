@@ -67,3 +67,33 @@ def insert_jobs(jobs: list[Job]) -> int:
 
     logger.info(f"Inserted {inserted} new jobs ({len(jobs) - inserted} duplicates skipped)")
     return inserted
+
+
+def fetch_all_jobs() -> list[Job]:
+    """Return all jobs from the database, newest first."""
+    sql = """
+        SELECT url_hash, title, company, location, url, source, raw_snippet, description, fetched_at
+        FROM jobs
+        ORDER BY fetched_at DESC
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    jobs = []
+    for row in rows:
+        url_hash, title, company, location, url, source, raw_snippet, description, fetched_at = row
+        job = Job(
+            title=title or '',
+            company=company or '',
+            location=location or '',
+            url=url,
+            source=source,
+            raw_snippet=raw_snippet or '',
+            description=description or '',
+            fetched_at=fetched_at,
+        )
+        jobs.append(job)
+
+    logger.info(f"Fetched {len(jobs)} jobs from database")
+    return jobs
