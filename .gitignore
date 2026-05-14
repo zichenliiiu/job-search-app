@@ -1,0 +1,33 @@
+# Virtual environment
+venv/
+env/
+
+# Environment variables
+.env
+
+# Gmail credentials
+config/credentials.json
+config/token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Database
+*.db
+*.sqlite
+
+# Data / debug output (may contain personal job data)
+data/
+
+# Claude Code
+.claude/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
