@@ -24,8 +24,10 @@ jobs:
 
       - name: Write Gmail credential files
         run: |
-          echo "$GMAIL_TOKEN_JSON" | base64 -d > config/token.json
-          echo "$GMAIL_CREDENTIALS_JSON" | base64 -d > config/credentials.json
+          echo "$GMAIL_TOKEN_JSON" | tr -d '\n' | base64 --decode > config/token.json
+          echo "$GMAIL_CREDENTIALS_JSON" | tr -d '\n' | base64 --decode > config/credentials.json
+          echo "token.json: $(wc -c < config/token.json) bytes"
+          echo "credentials.json: $(wc -c < config/credentials.json) bytes"
         env:
           GMAIL_TOKEN_JSON: ${{ secrets.GMAIL_TOKEN_JSON }}
           GMAIL_CREDENTIALS_JSON: ${{ secrets.GMAIL_CREDENTIALS_JSON }}
