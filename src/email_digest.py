@@ -1,3 +1,9 @@
+# HTML email builder and Gmail SMTP sender.
+# Called by run_digest.py as the final step of the pipeline.
+#
+#   build_html(result)    renders a RankerResult into a styled HTML email string
+#   send_digest(result)   calls build_html, then sends via Gmail SMTP; returns False if nothing to send
+
 import logging
 import smtplib
 from datetime import datetime, timezone

@@ -1,3 +1,12 @@
+# Claude-powered job ranker.
+# Called by run_digest.py after fetching recent jobs from the database.
+#
+#   rank_jobs(jobs)   sends all jobs to Claude in a single batched prompt,
+#                     scores each 0-100 against config/resume.txt + config/criteria.txt,
+#                     and returns a RankerResult with two tiers:
+#                       .top       — score >= TOP_THRESHOLD (75)
+#                       .next_best — score >= NEXT_BEST_FLOOR (40)
+
 import json
 import logging
 from dataclasses import dataclass
@@ -6,7 +15,7 @@ from pathlib import Path
 import anthropic
 
 from config.config import ANTHROPIC_API_KEY
-from src.gmail_fetcher import Job
+from src.job_class import Job
 
 logger = logging.getLogger(__name__)
 

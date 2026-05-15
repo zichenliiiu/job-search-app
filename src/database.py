@@ -1,3 +1,11 @@
+# Postgres persistence layer (Supabase).
+# Called by run_digest.py and test_fetch.py.
+#
+#   create_tables()               creates the jobs table if it doesn't exist (safe to call on every run)
+#   insert_jobs(jobs)             upserts a list[Job], skips duplicates by url_hash → returns new row count
+#   fetch_recent_jobs(hours=24)   returns jobs fetched within the last N hours, newest first
+#   fetch_all_jobs()              returns all jobs in the database, newest first
+
 import logging
 from datetime import datetime, timezone
 
@@ -5,7 +13,7 @@ import psycopg2
 import psycopg2.extras
 
 from config.config import DATABASE_URL
-from src.gmail_fetcher import Job
+from src.job_class import Job
 
 logger = logging.getLogger(__name__)
 
