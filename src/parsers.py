@@ -38,9 +38,10 @@ def extract_company_from_url(url: str) -> str:
         if parts:
             return parts[0].replace('-', ' ').title()
 
-    # Company-owned domain: use the SLD (strip www. and TLD)
+    # Use the label before the TLD so careers.datadoghq.com → datadoghq, not careers.
     host = re.sub(r'^www\.', '', netloc)
-    sld = host.split('.')[0]
+    parts = host.split('.')
+    sld = parts[-2] if len(parts) >= 2 else parts[0]
     return sld.replace('-', ' ').title()
 
 

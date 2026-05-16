@@ -24,6 +24,9 @@ __pycache__/
 # Data / debug output (may contain personal job data)
 data/
 
+# Generated resume output
+output/
+
 # Claude Code
 .claude/
 
