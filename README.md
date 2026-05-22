@@ -41,13 +41,14 @@ config/
       ├─ scrapes each job URL for the full posting text
       └─ calls parsers.extract_ats_description to extract clean text
 
-3. database.insert_jobs(jobs)         writes to Postgres, deduplicates by url_hash
-   database.fetch_recent_jobs(24h)    reads back jobs for ranking
+3. database.insert_jobs(jobs)           writes to Postgres, deduplicates by url_hash
+   database.fetch_undigested_jobs()     reads back all jobs where digested_at IS NULL
 
-4. ranker.rank_jobs(jobs)             sends all jobs to Claude in one prompt,
-                                      returns RankerResult with top / next_best tiers
+4. ranker.rank_jobs(jobs)               sends all jobs to Claude in one prompt,
+                                        returns RankerResult with top / next_best tiers
 
-5. email_digest.send_digest(result)   renders HTML digest, sends via Gmail SMTP
+5. email_digest.send_digest(result)     renders HTML digest, sends via Gmail SMTP
+   database.mark_jobs_digested(hashes)  stamps digested_at=NOW() on sent jobs
 ```
 
 ### Data flow (generate_resume.py)
@@ -88,7 +89,7 @@ config/
 ### Inputs
 - `config/resume.txt` — plain text resume
 - `config/criteria.txt` — free-text description of what you're looking for (role, seniority, industry preferences, deal-breakers, etc.)
-- Jobs fetched in the last 24h, with title + company + description
+- All undigested jobs (fetched from Gmail but not yet surfaced in a digest), with title + company + description
 
 ### How it works
 Each job is scored by an LLM (Claude) in a single batched prompt. The prompt includes the resume, the criteria, and the job details, and asks the model to return a score (0–100) and a one-line reason.

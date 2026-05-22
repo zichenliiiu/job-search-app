@@ -1,9 +1,9 @@
 """
 Daily digest pipeline:
   1. Fetch unread Gmail alerts → enrich descriptions → save to DB
-  2. Query DB for jobs from last 24h
+  2. Query DB for all undigested jobs (digested_at IS NULL)
   3. Rank via Claude
-  4. Send digest email
+  4. Send digest email → mark jobs as digested
 """
 import logging
 import sys
@@ -16,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from src.gmail_fetcher import GmailFetcher
-from src.database import create_tables, insert_jobs, fetch_recent_jobs
+from src.database import create_tables, insert_jobs, fetch_undigested_jobs, mark_jobs_digested
 from src.ranker import rank_jobs
 from src.email_digest import send_digest
 
@@ -38,10 +38,10 @@ def main():
     else:
         logger.info("No new emails — skipping fetch step")
 
-    # Step 2: load last 24h from DB
-    recent = fetch_recent_jobs(hours=24)
+    # Step 2: load all undigested jobs from DB
+    recent = fetch_undigested_jobs()
     if not recent:
-        logger.info("No jobs in the last 24h — nothing to rank or send")
+        logger.info("No undigested jobs — nothing to rank or send")
         sys.exit(0)
 
     # Step 3: rank
@@ -49,9 +49,11 @@ def main():
     result = rank_jobs(recent)
     logger.info(f"Ranked: {len(result.top)} top, {len(result.next_best)} next best")
 
-    # Step 4: send
+    # Step 4: send — only mark digested after a confirmed send
     sent = send_digest(result)
     if sent:
+        url_hashes = [j.url_hash for j in recent]
+        mark_jobs_digested(url_hashes)
         logger.info("Digest sent successfully")
     else:
         logger.info("Nothing to send (all jobs dropped below floor score)")
