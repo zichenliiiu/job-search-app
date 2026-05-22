@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 from src.gmail_fetcher import GmailFetcher
 from src.database import create_tables, insert_jobs, fetch_undigested_jobs, mark_jobs_digested
+from src.job_class import Job
 from src.ranker import rank_jobs
 from src.email_digest import send_digest
 
@@ -31,8 +32,13 @@ def main():
     logger.info(f"Found {len(jobs)} new jobs")
 
     if jobs:
-        logger.info("Enriching job descriptions...")
-        fetcher.enrich_with_descriptions(jobs)
+        logger.info("Enriching jobs...")
+        fetcher.enrich(jobs)
+        seen: dict[str, Job] = {}
+        for job in jobs:
+            if job.url not in seen:
+                seen[job.url] = job
+        jobs = list(seen.values())
         inserted = insert_jobs(jobs)
         logger.info(f"Saved {inserted} new jobs to database")
     else:

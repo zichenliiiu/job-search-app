@@ -1,18 +1,20 @@
 # Gmail API client and job description scraper.
 # Entry point: GmailFetcher — instantiate once per run, then call:
 #
-#   fetch_all_jobs()               reads unread LinkedIn + Google Alert emails → list[Job]
-#   enrich_with_descriptions(jobs) scrapes each job URL and fills job.description in-place
-#   mark_last_batch_unread()       rolls back read-marks (useful during testing)
+#   fetch_all_jobs()  reads unread LinkedIn + Google Alert emails → list[Job]
+#   enrich(jobs)      fetches descriptions and resolves LinkedIn URLs to ATS URLs in-place
+#   mark_last_batch_unread()  rolls back read-marks (useful during testing)
 #
 # Parsing email HTML is delegated to src/parsers.py.
 # The Job dataclass is defined in src/job_class.py.
 
 import base64
+import hashlib
 import logging
 import re
 import time
 from typing import Optional
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -30,6 +32,13 @@ logger = logging.getLogger(__name__)
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
 LINKEDIN_SENDER = 'jobalerts-noreply@linkedin.com'
 GOOGLE_ALERTS_SENDER = 'googlealerts-noreply@google.com'
+
+# strips "source = linkedin"
+def _strip_source_param(url: str) -> str:
+    parsed = urlparse(url)
+    params = parse_qs(parsed.query, keep_blank_values=True)
+    params.pop('source', None)
+    return urlunparse(parsed._replace(query=urlencode({k: v[0] for k, v in params.items()})))
 
 
 class GmailFetcher:
@@ -117,7 +126,7 @@ class GmailFetcher:
             html = self._get_html_body(msg['id'])
             if html:
                 jobs.extend(parse_linkedin_email(html))
-                msg_ids.append(msg['id'])
+                msg_ids.append(msg['id']) # each email has a msg_id
         return jobs, msg_ids
 
     # --- Google Alerts ---
@@ -145,21 +154,28 @@ class GmailFetcher:
         'Referer': 'https://www.google.com/',
     }
 
-    def enrich_with_descriptions(self, jobs: list[Job], delay: float = 1.5) -> None:
-        """Fetch and attach job descriptions in-place. delay=seconds between requests."""
+    def enrich(self, jobs: list[Job], delay: float = 1.5) -> None:
         session = requests.Session()
         session.headers.update(self._SCRAPE_HEADERS)
 
         for i, job in enumerate(jobs):
             if i > 0:
                 time.sleep(delay)
-            job.description = self._fetch_description(session, job.url)
+            if job.source == 'linkedin':
+                match = re.search(r'/jobs/view/(\d+)', job.url)
+                if match:
+                    data = self._fetch_linkedin_voyager_data(match.group(1))
+                    job.description = self._parse_linkedin_description(data)
+                    ats_url = self._parse_linkedin_ats_url(data)
+                    if ats_url:
+                        job.url = ats_url
+                        job.url_hash = hashlib.md5(ats_url.encode()).hexdigest()
+            else:
+                job.description = self._fetch_ats_description(session, job.url)
             logger.info(f"[{i + 1}/{len(jobs)}] {job.title}: {len(job.description)} chars")
 
-    def _fetch_description(self, session: requests.Session, url: str) -> str:
+    def _fetch_ats_description(self, session: requests.Session, url: str) -> str:
         try:
-            if 'linkedin.com' in url:
-                return self._fetch_linkedin_description_voyager(url)
             resp = session.get(url, timeout=15, allow_redirects=True)
             resp.raise_for_status()
             soup = BeautifulSoup(resp.text, 'lxml')
@@ -169,12 +185,7 @@ class GmailFetcher:
             return ''
 
     @staticmethod
-    def _fetch_linkedin_description_voyager(url: str) -> str:
-        match = re.search(r'/jobs/view/(\d+)', url)
-        if not match:
-            return ''
-        job_id = match.group(1)
-
+    def _fetch_linkedin_voyager_data(job_id: str) -> dict:
         api_url = (
             f"https://www.linkedin.com/voyager/api/jobs/jobPostings/{job_id}"
             "?decorationId=com.linkedin.voyager.deco.jobs.web.shared.WebLightJobPosting-23"
@@ -198,6 +209,20 @@ class GmailFetcher:
             timeout=15,
         )
         resp.raise_for_status()
-        data = resp.json()
-        desc = (data.get('data') or data).get('description', {})
+        return resp.json()
+
+    @staticmethod
+    def _parse_linkedin_description(data: dict) -> str:
+        job_data = data.get('data') or data
+        desc = job_data.get('description', {})
         return desc.get('text', '') if isinstance(desc, dict) else ''
+
+    @staticmethod
+    def _parse_linkedin_ats_url(data: dict) -> Optional[str]:
+        job_data = data.get('data') or data
+        apply_method = job_data.get('applyMethod', {})
+        if apply_method.get('$type') == 'com.linkedin.voyager.jobs.OffsiteApply':
+            url = apply_method.get('companyApplyUrl', '')
+            if url:
+                return _strip_source_param(url)
+        return None
