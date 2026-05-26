@@ -153,6 +153,45 @@ def parse_google_alert_email(html: str) -> list[Job]:
     return jobs
 
 
+def extract_job_fields(soup: BeautifulSoup) -> dict:
+    """Extract title, company, location, and description from an ATS page.
+
+    Tries JSON-LD JobPosting schema first (Ashby, Lever, Greenhouse all emit it),
+    then falls back to heuristics for each field individually.
+    Returns a dict with keys: title, company, location, description.
+    Any field that can't be detected is returned as an empty string.
+    """
+    result = {'title': '', 'company': '', 'location': '', 'description': ''}
+
+    for script in soup.find_all('script', type='application/ld+json'):
+        try:
+            data = json.loads(script.string or '')
+            if not (isinstance(data, dict) and data.get('@type') == 'JobPosting'):
+                continue
+            result['title'] = data.get('title') or data.get('name') or ''
+            org = data.get('hiringOrganization') or {}
+            result['company'] = org.get('name', '') if isinstance(org, dict) else ''
+            loc = data.get('jobLocation') or {}
+            if isinstance(loc, list):
+                loc = loc[0] if loc else {}
+            addr = loc.get('address') or {} if isinstance(loc, dict) else {}
+            result['location'] = (
+                addr.get('addressLocality') or
+                addr.get('addressRegion') or
+                data.get('workLocation') or ''
+            ) if isinstance(addr, dict) else ''
+            if 'description' in data:
+                desc_soup = BeautifulSoup(data['description'], 'lxml')
+                result['description'] = desc_soup.get_text(separator='\n', strip=True)
+            return result
+        except (json.JSONDecodeError, AttributeError):
+            continue
+
+    # JSON-LD not found — fall back to description-only extraction
+    result['description'] = extract_ats_description(soup)
+    return result
+
+
 def extract_ats_description(soup: BeautifulSoup) -> str:
     # Many ATS platforms (Ashby, Lever, etc.) emit schema.org JobPosting JSON-LD
     for script in soup.find_all('script', type='application/ld+json'):

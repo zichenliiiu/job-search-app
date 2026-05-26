@@ -108,6 +108,70 @@ def fetch_undigested_jobs() -> list[Job]:
     return jobs
 
 
+def fetch_jobs_by_ids(ids: list[int]) -> list[Job]:
+    """Fetch specific jobs by their integer primary key."""
+    if not ids:
+        return []
+    sql = """
+        SELECT url_hash, title, company, location, url, source, raw_snippet, description, fetched_at
+        FROM jobs
+        WHERE id = ANY(%s)
+        ORDER BY fetched_at DESC
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, (ids,))
+        rows = cur.fetchall()
+
+    jobs = []
+    for row in rows:
+        url_hash, title, company, location, url, source, raw_snippet, description, fetched_at = row
+        job = Job(
+            title=title or '',
+            company=company or '',
+            location=location or '',
+            url=url,
+            source=source,
+            raw_snippet=raw_snippet or '',
+            description=description or '',
+            fetched_at=fetched_at,
+        )
+        jobs.append(job)
+
+    logger.info(f"Fetched {len(jobs)} jobs by id")
+    return jobs
+
+
+def fetch_digested_jobs() -> list[Job]:
+    """Return all jobs that have been sent in a digest, newest first."""
+    sql = """
+        SELECT url_hash, title, company, location, url, source, raw_snippet, description, fetched_at
+        FROM jobs
+        WHERE digested_at IS NOT NULL
+        ORDER BY fetched_at DESC
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    jobs = []
+    for row in rows:
+        url_hash, title, company, location, url, source, raw_snippet, description, fetched_at = row
+        job = Job(
+            title=title or '',
+            company=company or '',
+            location=location or '',
+            url=url,
+            source=source,
+            raw_snippet=raw_snippet or '',
+            description=description or '',
+            fetched_at=fetched_at,
+        )
+        jobs.append(job)
+
+    logger.info(f"Fetched {len(jobs)} digested jobs")
+    return jobs
+
+
 def mark_jobs_digested(url_hashes: list[str]) -> None:
     """Stamp digested_at=NOW() on the given jobs after a successful digest send."""
     if not url_hashes:
