@@ -1,0 +1,2 @@
+this is an example of a Product S&O at Google, different from GTM S&O https://www.linkedin.com/jobs/search-results/?currentJobId=4407621157&eBP=NON_CHARGEABLE_CHANNEL&refId=Ki%2F4Yve%2Bhsmy9jagCUyE6Q%3D%3D&trackingId=NCXq8fcvvEn98NnW%2Fbn8pA%3D%3D&showHowYouFit=HOW_YOU_FIT&keywords=Product%20Strategy&origin=QUALIFICATION_LANDING&originToLandingJobPostings=4411693072%2C4380619987%2C4378063773&geoId=103644278
+
