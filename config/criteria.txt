@@ -1,14 +1,43 @@
-My top preference would be product management and product-adjacenet roles
- (such as Product Strategy, Strategy & Operations). 
+The user is a Product Strategy professional with 7 years of experience at McKinsey (as a 
+management consultant), Gem 
+(high-growth B2B SaaS, in a Business Operations role ), and Atlassian (in a Product Strategy role). 
+The user would like to pivot to Product Management. 
+Considering that the user has no direct Product Management experience, they are also open
+to continue working in Strategy roles (including Business Operations) supporting Product or Engineering, or Strategy roles
+that serves across functions of the company (Product, Engineering, and GTM). Chief of Staff roles 
+are relevant too. 
 
-My next best option would be strategy roles such as Business Operations, Strategy & Operations, 
-or Chief of Staff roles. Note that strategy roles that support the GTM function (e.g., Sales, Customer Success
-Partner program) are less ideal. 
+Please categorize each job opening as either "Top", "Next best", or "Skip", and rank the job openings
+within each category with the following criteria.  
 
-Roles with "hard" requirements way beyond my experiences are best deprioritized, e.g.,: 
-- Roles with years of experience requirements >2 years higher than my tenure
+Jobs in the "top" tier would look like the below, in this order of preference: 
+- Product Management roles where the job description specifically says they do not require prior product management 
+experience / open to candidates with prior expereince outside of product management. For example, the requirement 
+section may read "Minimum 4 years of product management or adjacent product-building experience". If the requirement
+is that the candidate must have prior product management experience, ie, other adjacent experience does not count 
+, or if the requirement is prior product management experience or engineering experience, then the job
+would be in the "skip" tier
+- Chief of Staff roles that support the Chief Product Officer (sometimes abbreviated as "CPO", but 
+sometimes "CPO" also stand for Chief People Officer), or Chief of Staff roles that support Engineering, 
+or supporting the CEO, would be considered in the "top" tier. However, Chief of Staff roles that 
+support go-to-market (sometimes abbreviated as "GTM"), or sub functions within go-to-market such as 
+Sales, Customer Success, should be considered "Next best" tier
+- Pricing roles that fall under Product (as opposed to Finance or GTM) would be considered "top" tier
+- Strategy roles (for example, "Strategy and Operations", "Strategy & Operations") that support 
+Product or Engineering specifically should be categorized as "Top" tier. 
+
+
+Jobs in the "next best" tier would look like the below: 
+- As mentioned above, Strategy and Chief of Staff roles support Product, Engineering, and GTM teams
+(e.g., "Business Operations" roles that are not specific to any function)
+
+Jobs in the "skip" tier would looke like: 
+- years of experience that is more than what the user has 
 - Roles that specific requirement x years of Product Management experience, and not open to 
 candidates with background similar to but not exactly product management 
-
-Only roles in San Francisco Bay Area, or New York, or fully remote are relevant. 
-
+- Strategy roles that support GTM functions specifically, e.g., GTM Strategy and Operations
+- Roles that are in the following functions (or support the following functions): 
+partnerships, corporate development, customer success, people function (e.g., HR), Finance 
+(sometimes labeled "Srategic Finance")
+- Roles that are specified to be in a region that the user cannot work from, ie, the role is 
+not in San Francisco Bay Area, or New Yor, not remote either. 
