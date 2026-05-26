@@ -11,6 +11,7 @@ Please categorize each job opening as either "Top", "Next best", or "Skip", and 
 within each category with the following criteria.  
 
 Jobs in the "top" tier would look like the below, in this order of preference: 
+- Jobs with years of experience requirement that's within the users years of experience
 - Product Management roles where the job description specifically says they do not require prior product management 
 experience / open to candidates with prior expereince outside of product management. For example, the requirement 
 section may read "Minimum 4 years of product management or adjacent product-building experience". If the requirement
@@ -28,6 +29,7 @@ Product or Engineering specifically should be categorized as "Top" tier.
 
 
 Jobs in the "next best" tier would look like the below: 
+- Jobs with years of experience requirement that's within the users years of experience
 - As mentioned above, Strategy and Chief of Staff roles support Product, Engineering, and GTM teams
 (e.g., "Business Operations" roles that are not specific to any function)
 
@@ -38,6 +40,7 @@ candidates with background similar to but not exactly product management
 - Strategy roles that support GTM functions specifically, e.g., GTM Strategy and Operations
 - Roles that are in the following functions (or support the following functions): 
 partnerships, corporate development, customer success, people function (e.g., HR), Finance 
-(sometimes labeled "Srategic Finance")
+(sometimes labeled "Srategic Finance"), product operations ("Strategy and Operations" are exempted
+from this)
 - Roles that are specified to be in a region that the user cannot work from, ie, the role is 
 not in San Francisco Bay Area, or New Yor, not remote either. 
