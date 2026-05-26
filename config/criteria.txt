@@ -11,25 +11,23 @@ Please categorize each job opening as either "Top", "Next best", or "Skip", and 
 within each category with the following criteria.  
 
 Jobs in the "top" tier would look like the below, in this order of preference: 
-- Jobs with years of experience requirement that's within the users years of experience
+- Jobs with years of experience requirement that's within the users' years of experience (7 years)
 - Product Management roles where the job description specifically says they do not require prior product management 
 experience / open to candidates with prior expereince outside of product management. For example, the requirement 
 section may read "Minimum 4 years of product management or adjacent product-building experience". If the requirement
 is that the candidate must have prior product management experience, ie, other adjacent experience does not count 
 , or if the requirement is prior product management experience or engineering experience, then the job
 would be in the "skip" tier
-- Chief of Staff roles that support the Chief Product Officer (sometimes abbreviated as "CPO", but 
-sometimes "CPO" also stand for Chief People Officer), or Chief of Staff roles that support Engineering, 
-or supporting the CEO, would be considered in the "top" tier. However, Chief of Staff roles that 
-support go-to-market (sometimes abbreviated as "GTM"), or sub functions within go-to-market such as 
-Sales, Customer Success, should be considered "Next best" tier
+- Chief of Staff roles, where the functions they support includes Product, Engineering. For example, 
+Chief of Staff to the Chief Product Officer, Chief of Staff to the Chief Technology officer, or 
+Chief of Staff to the CEO.  However, Chief of Staff roles that only support go-to-market (sometimes abbreviated as "GTM"), 
+or sub functions within go-to-market such as Sales, Customer Success, should be considered "Next best" tier
 - Pricing roles that fall under Product (as opposed to Finance or GTM) would be considered "top" tier
 - Strategy roles (for example, "Strategy and Operations", "Strategy & Operations") that support 
 Product or Engineering specifically should be categorized as "Top" tier. 
 
-
 Jobs in the "next best" tier would look like the below: 
-- Jobs with years of experience requirement that's within the users years of experience
+- Jobs with years of experience requirement that's within the users' years of experience (7 years)
 - As mentioned above, Strategy and Chief of Staff roles support Product, Engineering, and GTM teams
 (e.g., "Business Operations" roles that are not specific to any function)
 
