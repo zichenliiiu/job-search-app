@@ -12,6 +12,7 @@ Email-based job search digest with AI-powered ranking and resume generation.
 run_digest.py          Entry point — orchestrates the full daily pipeline
 generate_resume.py     Entry point — generates a tailored resume for a specific job
 test_fetch.py          Manual test runner for fetching and inspecting jobs
+api.py                 Flask API server — serves ranked jobs from Postgres to the frontend
 
 src/
   job_class.py         Job dataclass — shared data model across all modules
@@ -31,7 +32,7 @@ config/
 
 frontend/              React web app (Vite) — displays ranked openings
   src/
-    App.jsx            Top-level shell; fetches ranked feed from API
+    App.jsx            Top-level shell; fetches dates then feed from API on mount/date change
     components/        TopBar, PageHeader, SummaryRow, Section, JobCard
     styles/            tokens.css (design tokens), app.css (view styles)
   public/favicon.svg
@@ -63,6 +64,34 @@ design_handoff_ranked_openings/   Original Claude Design prototype — reference
    database.mark_jobs_digested(hashes)  stamps digested_at=NOW() on sent jobs
 ```
 
+### Data flow (api.py → frontend)
+
+```
+Browser → Vite dev server (localhost:5173)
+            └─ /api/* proxied → Flask (localhost:5001)
+                  └─ queries Postgres
+
+GET /api/dates
+      └─ SELECT DISTINCT DATE(ranked_at) FROM jobs WHERE tier IN ('top','next_best')
+         Returns: [{ date, label, day }]  e.g. [{ date: "2026-05-28", label: "Today", day: "Thu · May 28" }]
+
+GET /api/feed?date=YYYY-MM-DD
+      └─ SELECT … FROM jobs WHERE tier IN ('top','next_best') AND DATE(ranked_at) = date
+         Returns: { topPicks: [Job], nextBest: [Job], syncedAt: string }
+
+DB column → frontend field mapping:
+  title      → role
+  company    → co
+  location   → loc
+  url_hash   → id   (used as stable React key and track toggle identifier)
+  url        → url
+  reason     → reason
+  fetched_at → posted  (rendered as relative label: "Today", "1d ago", …)
+  location   → remote  ("Remote OK" pill if "remote" appears in location, else null)
+  tier_order → tierOrder
+  salary     → null    (not stored in DB; field reserved for future enrichment)
+```
+
 ### Data flow (generate_resume.py)
 
 ```
@@ -81,6 +110,24 @@ design_handoff_ranked_openings/   Original Claude Design prototype — reference
       ├─ if > 1 page: reduces font size (10.5pt → 10pt → 9.5pt → 9pt) and re-renders
       └─ writes final one-page PDF → output/resume_<ts>.pdf
 ```
+
+---
+
+## Running the web app
+
+Two processes must be running in parallel:
+
+```bash
+# Terminal 1 — API server (port 5001)
+source venv/bin/activate && python api.py
+
+# Terminal 2 — Vite dev server (port 5173)
+cd frontend && npm run dev
+```
+
+Then open `http://localhost:5173`. Vite proxies all `/api/*` requests to Flask, so no CORS configuration is needed.
+
+The date scrubber in the top bar shows only dates for which ranked jobs exist in the database. If the database is empty the feed shows blank sections.
 
 ---
 
@@ -124,6 +171,8 @@ Each ranked job also gets `tier_order` (position within its tier), `reason` (one
 - `src/ranker.py` — calls Claude API, returns scored + tiered job list ✅
 - `src/database.py` — `save_ranking()` persists tier/tier_order/reason/ranked_at ✅
 - `src/email_digest.py` — renders tiered results into HTML and sends via Gmail SMTP ✅
+- `api.py` — Flask API serving ranked jobs from Postgres to the frontend ✅
+- `frontend/` — React app displaying the ranked feed ✅
 
 ---
 
