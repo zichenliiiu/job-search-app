@@ -1,21 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star, TrendingUp } from 'lucide-react';
 import TopBar from './components/TopBar';
 import PageHeader from './components/PageHeader';
 import SummaryRow from './components/SummaryRow';
 import Section from './components/Section';
 
-// Placeholder until API is wired up
-const PLACEHOLDER = {
-  topPicks: [],
-  nextBest: [],
-  syncedAt: '',
-};
-
 export default function App() {
+  const [dates, setDates] = useState([]);
   const [dateIdx, setDateIdx] = useState(0);
   const [tracked, setTracked] = useState(new Set());
-  const [feed, setFeed] = useState(PLACEHOLDER);
+  const [feed, setFeed] = useState({ topPicks: [], nextBest: [], syncedAt: '' });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/dates')
+      .then(r => r.json())
+      .then(data => {
+        setDates(data);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!dates.length) return;
+    setLoading(true);
+    fetch(`/api/feed?date=${dates[dateIdx].date}`)
+      .then(r => r.json())
+      .then(data => {
+        setFeed(data);
+        setLoading(false);
+      });
+  }, [dateIdx, dates]);
 
   const toggleTrack = (id) => {
     setTracked(prev => {
@@ -28,12 +42,16 @@ export default function App() {
   return (
     <div className="app">
       <main className="main">
-        <TopBar dateIdx={dateIdx} setDateIdx={setDateIdx} />
+        <TopBar dates={dates} dateIdx={dateIdx} setDateIdx={setDateIdx} />
         <div className="content">
           <PageHeader topCount={feed.topPicks.length} syncedAt={feed.syncedAt} />
           <SummaryRow topCount={feed.topPicks.length} nextCount={feed.nextBest.length} />
-          <Section kind="top"  icon={Star}        title="Top picks" jobs={feed.topPicks} tracked={tracked} onTrack={toggleTrack} />
-          <Section kind="next" icon={TrendingUp}  title="Next best" jobs={feed.nextBest} tracked={tracked} onTrack={toggleTrack} />
+          {!loading && (
+            <>
+              <Section kind="top"  icon={Star}        title="Top picks" jobs={feed.topPicks} tracked={tracked} onTrack={toggleTrack} />
+              <Section kind="next" icon={TrendingUp}  title="Next best" jobs={feed.nextBest} tracked={tracked} onTrack={toggleTrack} />
+            </>
+          )}
         </div>
       </main>
     </div>

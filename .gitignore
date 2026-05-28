@@ -33,6 +33,10 @@ eval/runs/
 # Claude Code
 .claude/
 
+# Node
+frontend/node_modules/
+frontend/package-lock.json
+
 # IDE
 .vscode/
 .idea/

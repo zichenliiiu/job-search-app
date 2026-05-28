@@ -1,14 +1,7 @@
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
-const DAYS = [
-  { key: 'today', label: 'Today',      day: 'Wed · Mar 12' },
-  { key: 'yest',  label: 'Yesterday',  day: 'Tue · Mar 11' },
-  { key: '2d',    label: '2 days ago', day: 'Mon · Mar 10' },
-  { key: '3d',    label: '3 days ago', day: 'Sun · Mar 9'  },
-];
-
-export default function TopBar({ dateIdx, setDateIdx }) {
-  const d = DAYS[dateIdx];
+export default function TopBar({ dates, dateIdx, setDateIdx }) {
+  const d = dates[dateIdx];
   return (
     <header className="topbar">
       <a className="tb-brand" href="#">
@@ -20,13 +13,19 @@ export default function TopBar({ dateIdx, setDateIdx }) {
       </a>
       <div className="tb-right">
         <div className="scrubber">
-          <button onClick={() => setDateIdx(Math.min(DAYS.length - 1, dateIdx + 1))} aria-label="Previous day">
+          <button onClick={() => setDateIdx(Math.min(dates.length - 1, dateIdx + 1))} aria-label="Previous day" disabled={!dates.length || dateIdx === dates.length - 1}>
             <ChevronLeft size={15} />
           </button>
           <span className="label">
             <span className="ic"><Calendar size={14} /></span>
-            <span>{d.label}</span>
-            <span className="day">· {d.day}</span>
+            {d ? (
+              <>
+                <span>{d.label}</span>
+                <span className="day">· {d.day}</span>
+              </>
+            ) : (
+              <span>—</span>
+            )}
           </span>
           <button onClick={() => setDateIdx(Math.max(0, dateIdx - 1))} aria-label="Next day" disabled={dateIdx === 0}>
             <ChevronRight size={15} />

@@ -1,0 +1,122 @@
+"""Flask API server — serves ranked jobs from the database to the frontend."""
+
+from datetime import date, datetime, timezone, timedelta
+from flask import Flask, jsonify, request
+import psycopg2
+import psycopg2.extras
+from config.config import DATABASE_URL
+
+app = Flask(__name__)
+
+
+def _connect():
+    return psycopg2.connect(DATABASE_URL)
+
+
+def _relative_label(d):
+    today = datetime.now(timezone.utc).date()
+    delta = (today - d).days
+    if delta == 0:
+        return "Today"
+    if delta == 1:
+        return "Yesterday"
+    return f"{delta}d ago"
+
+
+def _format_day(d):
+    return d.strftime("%a · %b %-d")
+
+
+def _remote_label(location):
+    if not location:
+        return None
+    low = location.lower()
+    if "remote" in low:
+        return "Remote OK"
+    return None
+
+
+def _job_row_to_dict(row) -> dict:
+    url_hash, title, company, location, url, reason, fetched_at, ranked_at, tier_order = row
+    return {
+        "id": url_hash,
+        "role": title or "",
+        "co": company or "",
+        "loc": location or "",
+        "remote": _remote_label(location),
+        "salary": None,
+        "posted": _relative_label(fetched_at.date()) if fetched_at else "",
+        "url": url,
+        "reason": reason or "",
+        "tierOrder": tier_order,
+    }
+
+
+@app.route("/api/dates")
+def get_dates():
+    """Return distinct dates (newest first) when rankings were produced."""
+    sql = """
+        SELECT DISTINCT DATE(ranked_at AT TIME ZONE 'UTC') AS d
+        FROM jobs
+        WHERE tier IN ('top', 'next_best') AND ranked_at IS NOT NULL
+        ORDER BY d DESC
+        LIMIT 30
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql)
+        rows = cur.fetchall()
+
+    dates = []
+    for (d,) in rows:
+        dates.append({
+            "date": d.isoformat(),
+            "label": _relative_label(d),
+            "day": _format_day(d),
+        })
+
+    return jsonify(dates)
+
+
+@app.route("/api/feed")
+def get_feed():
+    """Return top and next_best jobs for the given date (YYYY-MM-DD)."""
+    date_str = request.args.get("date")
+    if not date_str:
+        return jsonify({"error": "date parameter required"}), 400
+
+    sql = """
+        SELECT url_hash, title, company, location, url, reason, fetched_at, ranked_at, tier_order, tier
+        FROM jobs
+        WHERE tier IN ('top', 'next_best')
+          AND DATE(ranked_at AT TIME ZONE 'UTC') = %s
+        ORDER BY tier, tier_order ASC
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(sql, (date_str,))
+        rows = cur.fetchall()
+
+    top_picks = []
+    next_best = []
+    synced_at = None
+
+    for row in rows:
+        url_hash, title, company, location, url, reason, fetched_at, ranked_at, tier_order, tier = row
+        if synced_at is None and ranked_at is not None:
+            synced_at = ranked_at.astimezone(timezone.utc).strftime("Last synced %-I:%M %p UTC")
+        job = _job_row_to_dict(
+            (url_hash, title, company, location, url, reason, fetched_at, ranked_at, tier_order)
+        )
+        if tier == "top":
+            top_picks.append(job)
+        else:
+            next_best.append(job)
+
+    return jsonify({
+        "topPicks": top_picks,
+        "nextBest": next_best,
+        "syncedAt": synced_at or "",
+    })
+
+
+if __name__ == "__main__":
+    app.run(port=5001, debug=True)
