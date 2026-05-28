@@ -5,6 +5,7 @@
 #   insert_jobs(jobs)                upserts a list[Job], skips duplicates by url_hash → returns new row count
 #   fetch_undigested_jobs()          returns all jobs not yet sent in a digest (digested_at IS NULL), newest first
 #   mark_jobs_digested(url_hashes)   stamps digested_at=NOW() on the given rows after a successful digest send
+#   save_ranking(result, all_jobs)   writes tier/tier_order/reason/ranked_at to the ranked rows; marks the rest 'skip'
 
 import logging
 from datetime import datetime, timezone
@@ -29,9 +30,14 @@ CREATE TABLE IF NOT EXISTS jobs (
     raw_snippet   TEXT,
     description   TEXT,
     fetched_at    TIMESTAMPTZ NOT NULL,
-    digested_at   TIMESTAMPTZ
+    digested_at   TIMESTAMPTZ,
+    tier          TEXT,
+    tier_order    INTEGER,
+    reason        TEXT,
+    ranked_at     TIMESTAMPTZ
 );
 """
+
 
 def _connect():
     return psycopg2.connect(DATABASE_URL)
@@ -41,6 +47,20 @@ def create_tables() -> None:
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(CREATE_JOBS_TABLE)
     logger.info("Database tables ready")
+
+
+def migrate_add_ranking_columns() -> None:
+    """One-time migration: add ranking columns to existing jobs table."""
+    stmts = [
+        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS tier       TEXT",
+        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS tier_order INTEGER",
+        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS reason     TEXT",
+        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS ranked_at  TIMESTAMPTZ",
+    ]
+    with _connect() as conn, conn.cursor() as cur:
+        for stmt in stmts:
+            cur.execute(stmt)
+    logger.info("Ranking columns added to jobs table")
 
 
 def insert_jobs(jobs: list[Job]) -> int:
@@ -184,6 +204,49 @@ def mark_jobs_digested(url_hashes: list[str]) -> None:
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(sql, (url_hashes,))
     logger.info(f"Marked {len(url_hashes)} jobs as digested")
+
+
+def save_ranking(result, all_jobs: list[Job]) -> None:
+    """Write ranking results back to the jobs rows.
+
+    Ranked jobs (top / next_best) get tier, tier_order, reason, and ranked_at.
+    Jobs that were evaluated but fell below the score threshold get tier='skip'.
+    """
+    now = datetime.now(timezone.utc)
+    ranked_hashes: set[str] = set()
+    rows = []
+
+    for order, ranked_job in enumerate(result.top, start=1):
+        rows.append((ranked_job.job.url_hash, 'top', order, ranked_job.reason, now))
+        ranked_hashes.add(ranked_job.job.url_hash)
+
+    for order, ranked_job in enumerate(result.next_best, start=1):
+        rows.append((ranked_job.job.url_hash, 'next_best', order, ranked_job.reason, now))
+        ranked_hashes.add(ranked_job.job.url_hash)
+
+    skip_hashes = [job.url_hash for job in all_jobs if job.url_hash not in ranked_hashes]
+
+    with _connect() as conn, conn.cursor() as cur:
+        if rows:
+            psycopg2.extras.execute_values(
+                cur,
+                """
+                UPDATE jobs
+                SET tier = data.tier, tier_order = data.tier_order,
+                    reason = data.reason, ranked_at = data.ranked_at
+                FROM (VALUES %s) AS data(url_hash, tier, tier_order, reason, ranked_at)
+                WHERE jobs.url_hash = data.url_hash
+                """,
+                rows,
+                template="(%s, %s, %s, %s, %s::timestamptz)",
+            )
+        if skip_hashes:
+            cur.execute(
+                "UPDATE jobs SET tier = 'skip', ranked_at = %s WHERE url_hash = ANY(%s)",
+                (now, skip_hashes),
+            )
+
+    logger.info(f"Saved ranking: {len(result.top)} top, {len(result.next_best)} next_best, {len(skip_hashes)} skip")
 
 
 

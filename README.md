@@ -17,7 +17,7 @@ src/
   job_class.py         Job dataclass — shared data model across all modules
   gmail_fetcher.py     Gmail API client — fetches unread emails, scrapes job descriptions
   parsers.py           Email HTML parsers + URL→company extractor — no network I/O
-  database.py          Postgres layer — insert and query jobs
+  database.py          Postgres layer — insert, query, and rank jobs
   ranker.py            Claude-powered scorer — returns tiered RankerResult
   email_digest.py      HTML email builder and Gmail SMTP sender
   resume_generator.py  Claude-powered resume tailor — selects and rewrites bullets for a role
@@ -28,6 +28,16 @@ config/
   criteria.txt         What you're looking for — read by ranker.py at runtime
   job_description.txt  Job description to tailor resume against — read by resume_generator.py
   resume_prompt.txt    Prompt instructions for resume tailoring — edit to iterate on behavior
+
+frontend/              React web app (Vite) — displays ranked openings
+  src/
+    App.jsx            Top-level shell; fetches ranked feed from API
+    components/        TopBar, PageHeader, SummaryRow, Section, JobCard
+    styles/            tokens.css (design tokens), app.css (view styles)
+  public/favicon.svg
+  index.html / vite.config.js / package.json
+
+design_handoff_ranked_openings/   Original Claude Design prototype — reference only, not shipped
 ```
 
 ### Data flow (run_digest.py)
@@ -46,6 +56,8 @@ config/
 
 4. ranker.rank_jobs(jobs)               sends all jobs to Claude in one prompt,
                                         returns RankerResult with top / next_best tiers
+   database.save_ranking(result, jobs)  writes tier / tier_order / reason / ranked_at
+                                        back to each job row; marks below-threshold jobs 'skip'
 
 5. email_digest.send_digest(result)     renders HTML digest, sends via Gmail SMTP
    database.mark_jobs_digested(hashes)  stamps digested_at=NOW() on sent jobs
@@ -94,10 +106,12 @@ config/
 ### How it works
 Each job is scored by an LLM (Claude) in a single batched prompt. The prompt includes the resume, the criteria, and the job details, and asks the model to return a score (0–100) and a one-line reason.
 
-Jobs are then split into two tiers:
-- **Top Options** — score ≥ threshold (e.g. 75). Strong match on role fit, seniority, and stated preferences.
-- **Next Best** — score below threshold but above a floor (e.g. 40). Partial matches worth a quick look on thin days.
-- Jobs below the floor are dropped silently.
+Jobs are then split into tiers and written back to the database:
+- **Top** (`tier = 'top'`) — score ≥ 75. Strong match on role fit, seniority, and stated preferences.
+- **Next Best** (`tier = 'next_best'`) — score 40–74. Partial matches worth a quick look on thin days.
+- **Skip** (`tier = 'skip'`) — score < 40. Stored but not surfaced in the digest or web app.
+
+Each ranked job also gets `tier_order` (position within its tier), `reason` (one-line Claude rationale), and `ranked_at` (timestamp of the ranking run). The web frontend uses these columns to display the day's feed.
 
 ### Digest behaviour
 - If Top Options is non-empty: send both sections.
@@ -108,6 +122,7 @@ Jobs are then split into two tiers:
 - `config/resume.txt` — user-maintained
 - `config/criteria.txt` — user-maintained
 - `src/ranker.py` — calls Claude API, returns scored + tiered job list ✅
+- `src/database.py` — `save_ranking()` persists tier/tier_order/reason/ranked_at ✅
 - `src/email_digest.py` — renders tiered results into HTML and sends via Gmail SMTP ✅
 
 ---

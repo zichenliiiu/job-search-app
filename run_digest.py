@@ -2,7 +2,7 @@
 Daily digest pipeline:
   1. Fetch unread Gmail alerts → enrich descriptions → save to DB
   2. Query DB for all undigested jobs (digested_at IS NULL)
-  3. Rank via Claude
+  3. Rank via Claude → save tier / tier_order / reason / ranked_at back to DB
   4. Send digest email → mark jobs as digested
 """
 import logging
@@ -16,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from src.gmail_fetcher import GmailFetcher
-from src.database import create_tables, insert_jobs, fetch_undigested_jobs, mark_jobs_digested
+from src.database import create_tables, insert_jobs, fetch_undigested_jobs, mark_jobs_digested, save_ranking
 from src.job_class import Job
 from src.ranker import rank_jobs
 from src.email_digest import send_digest
@@ -54,6 +54,7 @@ def main():
     logger.info(f"Ranking {len(recent)} jobs...")
     result = rank_jobs(recent)
     logger.info(f"Ranked: {len(result.top)} top, {len(result.next_best)} next best")
+    save_ranking(result, recent)
 
     # Step 4: send — only mark digested after a confirmed send
     sent = send_digest(result)
