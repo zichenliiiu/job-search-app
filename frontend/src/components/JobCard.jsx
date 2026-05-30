@@ -14,16 +14,11 @@ export default function JobCard({ job, kind }) {
               <span>{job.loc}</span>
             </span>
             {job.remote && <span className="remote-pill">{job.remote}</span>}
-</div>
+          </div>
         </div>
-      </div>
-
-      <div className="jc-foot">
-        <div className="jc-actions">
-          <a className="btn btn-secondary" href={job.url} target="_blank" rel="noreferrer">
-            <ExternalLink size={13} /> Open posting
-          </a>
-        </div>
+        <a className="btn btn-secondary jc-link" href={job.url} target="_blank" rel="noreferrer">
+          <ExternalLink size={13} /> Open posting
+        </a>
       </div>
     </article>
   );
