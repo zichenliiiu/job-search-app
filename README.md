@@ -9,9 +9,10 @@ Email-based job search digest with AI-powered ranking and resume generation.
 ### File map
 
 ```
-run_digest.py          Entry point — orchestrates the full daily pipeline
+fetch_jobs.py          Entry point — fetches Gmail alerts, enriches descriptions, saves to DB (no AI, runs hourly)
+send_digest.py         Entry point — ranks all undigested jobs via Claude and sends the daily email digest
 generate_resume.py     Entry point — generates a tailored resume for a specific job
-test_fetch.py          Manual test runner for fetching and inspecting jobs
+run_digest.py          Deprecated — superseded by fetch_jobs.py + send_digest.py
 api.py                 Flask API server — serves ranked jobs from Postgres to the frontend
 
 src/
@@ -41,8 +42,11 @@ frontend/              React web app (Vite) — displays ranked openings
 design_handoff_ranked_openings/   Original Claude Design prototype — reference only, not shipped
 ```
 
-### Data flow (run_digest.py)
+### Data flow
 
+The pipeline is split into two independent scripts with different cadences:
+
+**fetch_jobs.py** (runs hourly via GitHub Actions — no AI cost)
 ```
 1. GmailFetcher.fetch_all_jobs()
       ├─ reads unread LinkedIn + Google Alert emails via Gmail API
@@ -53,16 +57,22 @@ design_handoff_ranked_openings/   Original Claude Design prototype — reference
       └─ calls parsers.extract_ats_description to extract clean text
 
 3. database.insert_jobs(jobs)           writes to Postgres, deduplicates by url_hash
-   database.fetch_undigested_jobs()     reads back all jobs where digested_at IS NULL
+```
 
-4. ranker.rank_jobs(jobs)               sends all jobs to Claude in one prompt,
+**send_digest.py** (runs once daily at midnight SF time via GitHub Actions)
+```
+1. database.fetch_undigested_jobs()     loads all jobs where digested_at IS NULL
+
+2. ranker.rank_jobs(jobs)               sends the full undigested pool to Claude in one prompt,
                                         returns RankerResult with top / next_best tiers
    database.save_ranking(result, jobs)  writes tier / tier_order / reason / ranked_at
                                         back to each job row; marks below-threshold jobs 'skip'
 
-5. email_digest.send_digest(result)     renders HTML digest, sends via Gmail SMTP
+3. email_digest.send_digest(result)     renders HTML digest, sends via Gmail SMTP
    database.mark_jobs_digested(hashes)  stamps digested_at=NOW() on sent jobs
 ```
+
+Keeping fetch and rank separate ensures that `tier_order` is always globally consistent for the day's digest — the ranker always sees the full accumulated pool of undigested jobs in one shot, regardless of how many fetch runs have occurred.
 
 ### Data flow (api.py → frontend)
 

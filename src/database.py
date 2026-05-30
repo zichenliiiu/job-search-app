@@ -1,5 +1,5 @@
 # Postgres persistence layer (Supabase).
-# Called by run_digest.py and test_fetch.py.
+# Called by fetch_jobs.py, send_digest.py, and test_fetch.py.
 #
 #   create_tables()                  creates the jobs table if it doesn't exist (safe to call on every run)
 #   insert_jobs(jobs)                upserts a list[Job], skips duplicates by url_hash → returns new row count

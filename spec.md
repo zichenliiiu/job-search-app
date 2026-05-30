@@ -165,17 +165,24 @@ Decent match: Strong on strategy, light on B2B SaaS...
 
 ## MVP Workflow
 
-**Daily at 6:00 AM (GitHub Actions cron):**
+The pipeline runs as two separate GitHub Actions workflows:
+
+**Hourly — fetch_jobs.py:**
 1. Fetch unread LinkedIn job alert emails
 2. Fetch unread Google Alert emails
 3. Parse and extract job data
 4. Check for duplicates (URL hash)
 5. Store new jobs in database
-6. Generate embeddings for new jobs
-7. Score jobs using Claude API
-8. Generate HTML email digest
-9. Send email to your inbox
-10. Mark source emails as read
+6. Mark source emails as read
+
+**Daily at midnight SF time — send_digest.py:**
+1. Load all undigested jobs from database
+2. Score all jobs in one batched Claude API call
+3. Generate HTML email digest
+4. Send email to inbox
+5. Mark jobs as digested
+
+Separating fetch from rank ensures the daily digest always ranks the full accumulated pool of undigested jobs in one global pass — no duplicate tier ordering across multiple fetch runs.
 
 ---
 

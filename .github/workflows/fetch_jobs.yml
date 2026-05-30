@@ -1,12 +1,12 @@
-name: Daily Job Digest
+name: Hourly Job Fetch
 
 on:
   schedule:
-    - cron: '0 7 * * *'   # midnight San Francisco (PDT, UTC-7)
-  workflow_dispatch:        # allow manual trigger from GitHub UI
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:       # allow manual trigger from GitHub UI
 
 jobs:
-  digest:
+  fetch:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,20 +26,16 @@ jobs:
         run: |
           printf '%s' "$GMAIL_TOKEN_JSON" > config/token.json
           printf '%s' "$GMAIL_CREDENTIALS_JSON" > config/credentials.json
-          echo "token.json: $(wc -c < config/token.json) bytes"
-          echo "credentials.json: $(wc -c < config/credentials.json) bytes"
         env:
           GMAIL_TOKEN_JSON: ${{ secrets.GMAIL_TOKEN_JSON }}
           GMAIL_CREDENTIALS_JSON: ${{ secrets.GMAIL_CREDENTIALS_JSON }}
 
-      - name: Rank and send digest
-        run: python send_digest.py
+      - name: Fetch new jobs
+        run: python fetch_jobs.py
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GMAIL_CREDENTIALS_PATH: config/credentials.json
           GMAIL_TOKEN_PATH: config/token.json
-          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
           LINKEDIN_LI_AT: ${{ secrets.LINKEDIN_LI_AT }}
           LINKEDIN_JSESSIONID: ${{ secrets.LINKEDIN_JSESSIONID }}
