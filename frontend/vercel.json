@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://job-search-app-production-4373.up.railway.app/api/:path*"
+    }
+  ]
+}
