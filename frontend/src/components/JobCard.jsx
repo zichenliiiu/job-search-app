@@ -1,4 +1,4 @@
-import { MapPin, Clock, ExternalLink, Circle, CheckCircle2 } from 'lucide-react';
+import { MapPin, ExternalLink, Circle, CheckCircle2 } from 'lucide-react';
 
 export default function JobCard({ job, kind, tracked, onTrack }) {
   return (
@@ -14,15 +14,7 @@ export default function JobCard({ job, kind, tracked, onTrack }) {
               <span>{job.loc}</span>
             </span>
             {job.remote && <span className="remote-pill">{job.remote}</span>}
-            <span className="item">
-              <span className="ic num" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1 }}>$</span>
-              <span className="num">{job.salary}</span>
-            </span>
-            <span className="item muted">
-              <span className="ic"><Clock size={13} /></span>
-              <span className="num">{job.posted}</span>
-            </span>
-          </div>
+</div>
         </div>
       </div>
 

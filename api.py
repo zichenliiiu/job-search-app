@@ -37,15 +37,13 @@ def _remote_label(location):
 
 
 def _job_row_to_dict(row) -> dict:
-    url_hash, title, company, location, url, reason, fetched_at, ranked_at, tier_order = row
+    url_hash, title, company, location, url, reason, tier_order = row
     return {
         "id": url_hash,
         "role": title or "",
         "co": company or "",
         "loc": location or "",
         "remote": _remote_label(location),
-        "salary": None,
-        "posted": _relative_label(fetched_at.date()) if fetched_at else "",
         "url": url,
         "reason": reason or "",
         "tierOrder": tier_order,
@@ -85,7 +83,7 @@ def get_feed():
         return jsonify({"error": "date parameter required"}), 400
 
     sql = """
-        SELECT url_hash, title, company, location, url, reason, fetched_at, ranked_at, tier_order, tier
+        SELECT url_hash, title, company, location, url, reason, ranked_at, tier_order, tier
         FROM jobs
         WHERE tier IN ('top', 'next_best')
           AND DATE(ranked_at AT TIME ZONE 'UTC') = %s
@@ -100,11 +98,11 @@ def get_feed():
     synced_at = None
 
     for row in rows:
-        url_hash, title, company, location, url, reason, fetched_at, ranked_at, tier_order, tier = row
+        url_hash, title, company, location, url, reason, ranked_at, tier_order, tier = row
         if synced_at is None and ranked_at is not None:
             synced_at = ranked_at.astimezone(timezone.utc).strftime("Last synced %-I:%M %p UTC")
         job = _job_row_to_dict(
-            (url_hash, title, company, location, url, reason, fetched_at, ranked_at, tier_order)
+            (url_hash, title, company, location, url, reason, tier_order)
         )
         if tier == "top":
             top_picks.append(job)
