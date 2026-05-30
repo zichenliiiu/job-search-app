@@ -1,6 +1,6 @@
 import JobCard from './JobCard';
 
-export default function Section({ kind, icon: Icon, title, jobs, tracked, onTrack }) {
+export default function Section({ kind, icon: Icon, title, jobs }) {
   return (
     <section className="section">
       <header className={'section-head ' + kind}>
@@ -11,7 +11,7 @@ export default function Section({ kind, icon: Icon, title, jobs, tracked, onTrac
       </header>
       <div className="card-list">
         {jobs.map(j => (
-          <JobCard key={j.id} job={j} kind={kind} tracked={tracked.has(j.id)} onTrack={onTrack} />
+          <JobCard key={j.id} job={j} kind={kind} />
         ))}
       </div>
     </section>

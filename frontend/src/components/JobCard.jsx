@@ -1,6 +1,6 @@
-import { MapPin, ExternalLink, Circle, CheckCircle2 } from 'lucide-react';
+import { MapPin, ExternalLink } from 'lucide-react';
 
-export default function JobCard({ job, kind, tracked, onTrack }) {
+export default function JobCard({ job, kind }) {
   return (
     <article className={'jcard ' + kind}>
       <div className="jc-body">
@@ -19,10 +19,6 @@ export default function JobCard({ job, kind, tracked, onTrack }) {
       </div>
 
       <div className="jc-foot">
-        <button className={'track-toggle' + (tracked ? ' on' : '')} onClick={() => onTrack(job.id)}>
-          <span className="ic">{tracked ? <CheckCircle2 size={16} /> : <Circle size={16} />}</span>
-          <span>{tracked ? 'Applied' : "Haven't applied"}</span>
-        </button>
         <div className="jc-actions">
           <a className="btn btn-secondary" href={job.url} target="_blank" rel="noreferrer">
             <ExternalLink size={13} /> Open posting
