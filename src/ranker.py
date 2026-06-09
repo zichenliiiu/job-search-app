@@ -2,10 +2,11 @@
 # Called by run_digest.py after fetching recent jobs from the database.
 #
 #   rank_jobs(jobs)   sends all jobs to Claude in a single batched prompt,
-#                     scores each 0-100 against config/resume.txt + config/criteria.txt,
+#                     categorizes each against config/resume.txt + config/criteria.txt,
 #                     and returns a RankerResult with two tiers:
-#                       .top       — score >= TOP_THRESHOLD (75)
-#                       .next_best — score >= NEXT_BEST_FLOOR (40)
+#                       .top       — matches the "top" description in criteria.txt
+#                       .next_best — matches the "next best" description in criteria.txt
+#                     (jobs matching "skip" are dropped)
 
 import json
 import logging
@@ -19,8 +20,6 @@ from src.job_class import Job
 
 logger = logging.getLogger(__name__)
 
-TOP_THRESHOLD = 75
-NEXT_BEST_FLOOR = 40
 DEFAULT_DESC_CAP = 1500
 TOKEN_BUDGET = 190_000
 MODEL = "claude-opus-4-7"
@@ -29,7 +28,6 @@ MODEL = "claude-opus-4-7"
 @dataclass
 class RankedJob:
     job: Job
-    score: int
     reason: str
     tier: str  # 'top' or 'next_best'
 
@@ -90,20 +88,20 @@ def rank_jobs(jobs: list[Job]) -> RankerResult:
                 f"minimum description length (~{total_tokens:,} estimated tokens). Results may be incomplete."
             )
 
-    system_prompt = f"""You are evaluating job postings for a candidate. Score each job 0-100 based on how well it matches their resume and what they are looking for.
+    system_prompt = f"""You are evaluating job postings for an user. Categorize each job posting based on the user's criteria.
 
-## What the candidate is looking for
+## How the user describe criteria for each category
 {criteria}
+"""
 
-## Candidate's resume
-{resume}"""
-
-    user_prompt = f"""Evaluate the {len(jobs)} job postings below. Return ONLY a JSON array — no prose, no markdown fences.
+    user_prompt = f"""Categorize the jobs below. Return ONLY a JSON array — no prose, no markdown fences.
 
 Each element must have:
 - "index": the job's [N] number (integer)
-- "score": integer 0-100
-- "reason": one sentence explaining the score (be specific — cite role fit, skills match, seniority, location, or deal-breakers)
+- "tier": one of "top", "next_best", or "skip", per the user's criteria above
+- "reason": one sentence explaining the categorization (be specific — cite role fit, skills match, seniority, location, or deal-breakers)
+
+Within each tier, order the elements from strongest to weakest match per the user's stated order of preference.
 
 ## Jobs
 {jobs_text}"""
@@ -131,26 +129,23 @@ Each element must have:
         raw = "\n".join(raw.split("\n")[1:])
         raw = raw.rsplit("```", 1)[0].strip()
 
-    scores = json.loads(raw)
+    categorized = json.loads(raw)
 
     top, next_best = [], []
-    for item in scores:
+    for item in categorized:
         idx = int(item["index"])
-        score = int(item["score"])
+        tier = item["tier"]
         reason = item["reason"]
         if idx >= len(jobs):
             continue
         job = jobs[idx]
-        if score >= TOP_THRESHOLD:
-            top.append(RankedJob(job=job, score=score, reason=reason, tier='top'))
-        elif score >= NEXT_BEST_FLOOR:
-            next_best.append(RankedJob(job=job, score=score, reason=reason, tier='next_best'))
-
-    top.sort(key=lambda x: x.score, reverse=True)
-    next_best.sort(key=lambda x: x.score, reverse=True)
+        if tier == 'top':
+            top.append(RankedJob(job=job, reason=reason, tier='top'))
+        elif tier == 'next_best':
+            next_best.append(RankedJob(job=job, reason=reason, tier='next_best'))
 
     logger.info(
         f"Ranked {len(jobs)} jobs: {len(top)} top, {len(next_best)} next best, "
-        f"{len(jobs) - len(top) - len(next_best)} dropped (score < {NEXT_BEST_FLOOR})"
+        f"{len(jobs) - len(top) - len(next_best)} skipped"
     )
     return RankerResult(top=top, next_best=next_best)

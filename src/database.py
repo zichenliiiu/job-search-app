@@ -210,7 +210,7 @@ def save_ranking(result, all_jobs: list[Job]) -> None:
     """Write ranking results back to the jobs rows.
 
     Ranked jobs (top / next_best) get tier, tier_order, reason, and ranked_at.
-    Jobs that were evaluated but fell below the score threshold get tier='skip'.
+    Jobs categorized as 'skip' get tier='skip'.
     """
     now = datetime.now(timezone.utc)
     ranked_hashes: set[str] = set()

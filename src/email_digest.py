@@ -26,8 +26,7 @@ def _job_card(rj: RankedJob, rank: int) -> str:
     <tr>
       <td style="padding:12px 0;border-bottom:1px solid #eee;">
         <div style="font-size:13px;color:#888;margin-bottom:2px;">
-          #{rank} &nbsp;&bull;&nbsp; Score: <strong>{rj.score}/100</strong>
-          &nbsp;&bull;&nbsp; {source_label}{loc}
+          #{rank} &nbsp;&bull;&nbsp; {source_label}{loc}
         </div>
         <div style="font-size:16px;font-weight:600;margin-bottom:2px;">
           <a href="{rj.job.url}" style="color:#1a1a1a;text-decoration:none;">{rj.job.title}</a>

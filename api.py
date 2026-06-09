@@ -115,6 +115,5 @@ def get_feed():
         "syncedAt": synced_at or "",
     })
 
-
 if __name__ == "__main__":
     app.run(port=5001, debug=True)

@@ -50,7 +50,7 @@ def main():
         logger.info("No undigested jobs — nothing to rank or send")
         sys.exit(0)
 
-    # Step 3: rank
+    # Step 3: rank and write result to database
     logger.info(f"Ranking {len(recent)} jobs...")
     result = rank_jobs(recent)
     logger.info(f"Ranked: {len(result.top)} top, {len(result.next_best)} next best")
@@ -63,7 +63,7 @@ def main():
         mark_jobs_digested(url_hashes)
         logger.info("Digest sent successfully")
     else:
-        logger.info("Nothing to send (all jobs dropped below floor score)")
+        logger.info("Nothing to send (all jobs categorized as skip)")
 
 
 if __name__ == "__main__":
