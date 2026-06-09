@@ -31,8 +31,8 @@ Jobs in the "next best" tier would look like the below:
 - As mentioned above, Chief of Staff roles that only support go-to-market (sometimes abbreviated as "GTM"), 
 or sub functions within go-to-market such as Sales, Customer Success, should be considered "Next best" tier
 
-Jobs in the "skip" tier would looke like: 
-- years of experience that is more than what the user has 
+Jobs in the "skip" tier would look like: 
+- years of experience that is more tha 20% of what the user has 
 - Product management roles that specifically require prior Product Management experience, and not open to 
 candidates with background similar to but not exactly product management 
 - Strategy roles that support GTM functions specifically, e.g., GTM Strategy and Operations

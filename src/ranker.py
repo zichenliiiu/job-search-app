@@ -88,7 +88,7 @@ def rank_jobs(jobs: list[Job]) -> RankerResult:
                 f"minimum description length (~{total_tokens:,} estimated tokens). Results may be incomplete."
             )
 
-    system_prompt = f"""You are evaluating job postings for an user. Categorize each job posting based on the user's criteria.
+    system_prompt = f"""You are evaluating job postings for an user. Categorize each job posting based on the user's criteria. Follow the users criteria precisely, do not deviate. 
 
 ## How the user describe criteria for each category
 {criteria}

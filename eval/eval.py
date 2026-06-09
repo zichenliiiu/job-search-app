@@ -103,14 +103,13 @@ def main():
     correct = 0
     top_predicted, top_expected = 0, 0
 
-    col = (5, 36, 20, 10, 10, 5)
+    col = (36, 20, 10, 10, 5)
     header = (
-        f"{'SCORE':>{col[0]}}  "
-        f"{'JOB':<{col[1]}}  "
-        f"{'COMPANY':<{col[2]}}  "
-        f"{'GOT':^{col[3]}}  "
-        f"{'EXPECTED':^{col[4]}}  "
-        f"{'':^{col[5]}}"
+        f"{'JOB':<{col[0]}}  "
+        f"{'COMPANY':<{col[1]}}  "
+        f"{'GOT':^{col[2]}}  "
+        f"{'EXPECTED':^{col[3]}}  "
+        f"{'':^{col[4]}}"
     )
     divider = '-' * len(header)
     print(f"\nEVAL RUN {run_timestamp.strftime('%Y-%m-%d %H:%M:%S')}  |  criteria.txt modified: {criteria_mtime}")
@@ -121,7 +120,6 @@ def main():
     for job in jobs:
         rj = ranked_by_hash.get(job.url_hash)
         actual_tier = rj.tier if rj else 'skip'
-        score = rj.score if rj else 0
         reason = rj.reason if rj else ''
 
         gt = ground_truth.get(job.url_hash, {})
@@ -136,16 +134,15 @@ def main():
             top_expected += 1
 
         mark = '✓' if match else '✗'
-        title = job.title[:col[1]] if len(job.title) > col[1] else job.title
-        company = job.company[:col[2]] if len(job.company) > col[2] else job.company
+        title = job.title[:col[0]] if len(job.title) > col[0] else job.title
+        company = job.company[:col[1]] if len(job.company) > col[1] else job.company
 
         print(
-            f"{score:>{col[0]}}  "
-            f"{title:<{col[1]}}  "
-            f"{company:<{col[2]}}  "
-            f"{tier_symbol(actual_tier):^{col[3]}}  "
-            f"{tier_symbol(expected_tier):^{col[4]}}  "
-            f"{mark:^{col[5]}}"
+            f"{title:<{col[0]}}  "
+            f"{company:<{col[1]}}  "
+            f"{tier_symbol(actual_tier):^{col[2]}}  "
+            f"{tier_symbol(expected_tier):^{col[3]}}  "
+            f"{mark:^{col[4]}}"
         )
         if rj and not match:
             print(f"       reason: {reason}")
@@ -154,7 +151,6 @@ def main():
             "url_hash":      job.url_hash,
             "title":         job.title,
             "company":       job.company,
-            "score":         score,
             "actual_tier":   actual_tier,
             "expected_tier": expected_tier,
             "match":         match,
