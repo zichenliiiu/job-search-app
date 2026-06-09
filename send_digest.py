@@ -41,7 +41,7 @@ def main():
         mark_jobs_digested(url_hashes)
         logger.info("Digest sent successfully")
     else:
-        logger.info("Nothing to send (all jobs dropped below floor score)")
+        logger.info("Nothing to send (all jobs categorized as skip)")
 
 
 if __name__ == "__main__":
