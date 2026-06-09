@@ -12,7 +12,6 @@ Email-based job search digest with AI-powered ranking and resume generation.
 fetch_jobs.py          Entry point — fetches Gmail alerts, enriches descriptions, saves to DB (no AI, runs hourly)
 send_digest.py         Entry point — ranks all undigested jobs via Claude and sends the daily email digest
 generate_resume.py     Entry point — generates a tailored resume for a specific job
-run_digest.py          Deprecated — superseded by fetch_jobs.py + send_digest.py
 api.py                 Flask API server — serves ranked jobs from Postgres to the frontend
 
 src/
@@ -38,8 +37,6 @@ frontend/              React web app (Vite) — displays ranked openings
     styles/            tokens.css (design tokens), app.css (view styles)
   public/favicon.svg
   index.html / vite.config.js / package.json
-
-design_handoff_ranked_openings/   Original Claude Design prototype — reference only, not shipped
 ```
 
 ### Data flow
@@ -147,7 +144,7 @@ The date scrubber in the top bar shows only dates for which ranked jobs exist in
 
 - [ ] **Manually verify fetcher captures all Google Alert results** — 5/15 update: changed google alert to as-it-happens vs. digest emails, since digest emails cap the results at 3. Updated fetcher but since there is no alert email to test yet, double check this again when there is real alert emails.
 
-- [ ] **Fine-tune ranking prompt** — iterate on `config/criteria.txt` and the system prompt in `src/ranker.py` based on results; check whether top/next-best thresholds (75/40) need adjusting.
+- [ ] **Fine-tune ranking prompt** — iterate on `config/criteria.txt` and the system prompt in `src/ranker.py` based on `eval/eval.py` results.
 
 - [ ] **Fine-tune resume generation prompt** — iterate on `config/resume_prompt.txt` based on output quality; focus on bullet selection relevance, wording match to JD, and length discipline. The prompt file is intentionally separate so it can be edited without touching code.
 
@@ -161,14 +158,14 @@ The date scrubber in the top bar shows only dates for which ranked jobs exist in
 - All undigested jobs (fetched from Gmail but not yet surfaced in a digest), with title + company + description
 
 ### How it works
-Each job is scored by an LLM (Claude) in a single batched prompt. The prompt includes the resume, the criteria, and the job details, and asks the model to return a score (0–100) and a one-line reason.
+Each job is categorized by an LLM (Claude) in a single batched prompt. The prompt includes the resume, the criteria, and the job details, and asks the model to directly assign a tier and a one-line reason — `config/criteria.txt` describes what "top", "next best", and "skip" jobs look like, in the user's own words.
 
 Jobs are then split into tiers and written back to the database:
-- **Top** (`tier = 'top'`) — score ≥ 75. Strong match on role fit, seniority, and stated preferences.
-- **Next Best** (`tier = 'next_best'`) — score 40–74. Partial matches worth a quick look on thin days.
-- **Skip** (`tier = 'skip'`) — score < 40. Stored but not surfaced in the digest or web app.
+- **Top** (`tier = 'top'`) — matches the "top" description in `config/criteria.txt`.
+- **Next Best** (`tier = 'next_best'`) — matches the "next best" description in `config/criteria.txt`.
+- **Skip** (`tier = 'skip'`) — matches the "skip" description. Stored but not surfaced in the digest or web app.
 
-Each ranked job also gets `tier_order` (position within its tier), `reason` (one-line Claude rationale), and `ranked_at` (timestamp of the ranking run). The web frontend uses these columns to display the day's feed.
+Each ranked job also gets `tier_order` (position within its tier, ordered by Claude from strongest to weakest match), `reason` (one-line Claude rationale), and `ranked_at` (timestamp of the ranking run). The web frontend uses these columns to display the day's feed.
 
 ### Digest behaviour
 - If Top Options is non-empty: send both sections.
