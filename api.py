@@ -100,9 +100,10 @@ def get_feed():
         return jsonify({"error": "date parameter required"}), 400
 
     sql = """
-        SELECT j.url_hash, j.title, j.company, j.location, j.url, ujr.reason, ujr.ranked_at, ujr.tier_order, ujr.tier
+        SELECT j.url_hash, j.title, c.name, j.location, j.url, ujr.reason, ujr.ranked_at, ujr.tier_order, ujr.tier
         FROM user_job_rankings ujr
         JOIN jobs j ON j.id = ujr.job_id
+        LEFT JOIN companies c ON c.id = j.company_id
         WHERE ujr.user_id = %s AND ujr.tier IN ('top', 'next_best')
           AND DATE(ujr.ranked_at AT TIME ZONE 'UTC') = %s
         ORDER BY ujr.tier, ujr.tier_order ASC

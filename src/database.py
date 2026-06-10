@@ -24,12 +24,21 @@ from src.job_class import Job
 
 logger = logging.getLogger(__name__)
 
+CREATE_COMPANIES_TABLE = """
+CREATE TABLE IF NOT EXISTS companies (
+    id            SERIAL PRIMARY KEY,
+    name          TEXT UNIQUE NOT NULL,
+    tracked       BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+"""
+
 CREATE_JOBS_TABLE = """
 CREATE TABLE IF NOT EXISTS jobs (
     id            SERIAL PRIMARY KEY,
     url_hash      TEXT UNIQUE NOT NULL,
     title         TEXT NOT NULL,
-    company       TEXT,
+    company_id    INTEGER REFERENCES companies(id),
     location      TEXT,
     url           TEXT NOT NULL,
     source        TEXT NOT NULL,
@@ -61,17 +70,8 @@ CREATE TABLE IF NOT EXISTS user_criteria (
 CREATE_USER_COMPANIES_TABLE = """
 CREATE TABLE IF NOT EXISTS user_companies (
     user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    company       TEXT NOT NULL,
-    PRIMARY KEY (user_id, company)
-);
-"""
-
-CREATE_COMPANIES_TABLE = """
-CREATE TABLE IF NOT EXISTS companies (
-    id            SERIAL PRIMARY KEY,
-    name          TEXT UNIQUE NOT NULL,
-    tracked       BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    company_id    INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, company_id)
 );
 """
 
@@ -94,11 +94,11 @@ def _connect():
 
 def create_tables() -> None:
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute(CREATE_JOBS_TABLE)
+        cur.execute(CREATE_COMPANIES_TABLE)
         cur.execute(CREATE_USERS_TABLE)
         cur.execute(CREATE_USER_CRITERIA_TABLE)
+        cur.execute(CREATE_JOBS_TABLE)
         cur.execute(CREATE_USER_COMPANIES_TABLE)
-        cur.execute(CREATE_COMPANIES_TABLE)
         cur.execute(CREATE_USER_JOB_RANKINGS_TABLE)
     logger.info("Database tables ready")
 
@@ -180,7 +180,16 @@ def save_user_criteria(user_id: int, criteria_text: str) -> None:
 def get_followed_companies(user_id: int) -> list[str]:
     """Return the list of companies the user follows, alphabetically."""
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT company FROM user_companies WHERE user_id = %s ORDER BY company", (user_id,))
+        cur.execute(
+            """
+            SELECT c.name
+            FROM user_companies uc
+            JOIN companies c ON c.id = uc.company_id
+            WHERE uc.user_id = %s
+            ORDER BY c.name
+            """,
+            (user_id,),
+        )
         rows = cur.fetchall()
     return [row[0] for row in rows]
 
@@ -191,10 +200,12 @@ def set_followed_companies(user_id: int, companies: list[str]) -> None:
     with _connect() as conn, conn.cursor() as cur:
         cur.execute("DELETE FROM user_companies WHERE user_id = %s", (user_id,))
         if companies:
+            cur.execute("SELECT id, name FROM companies WHERE name = ANY(%s)", (companies,))
+            company_ids = {name: cid for cid, name in cur.fetchall()}
             psycopg2.extras.execute_values(
                 cur,
-                "INSERT INTO user_companies (user_id, company) VALUES %s",
-                [(user_id, company) for company in companies],
+                "INSERT INTO user_companies (user_id, company_id) VALUES %s",
+                [(user_id, company_ids[c]) for c in companies if c in company_ids],
             )
     logger.info(f"Set {len(companies)} followed companies for user {user_id}")
 
@@ -204,6 +215,7 @@ def register_companies(names: list[str]) -> None:
 
     Existing companies, and their tracked status, are left untouched.
     """
+    names = [name for name in names if name]
     if not names:
         return
     with _connect() as conn, conn.cursor() as cur:
@@ -243,22 +255,46 @@ def set_company_tracked(name: str, tracked: bool) -> None:
     logger.info(f"Set company '{name}' tracked={tracked}")
 
 
-def migrate_drop_global_ranking_columns() -> None:
-    """One-time migration: drop the old global ranking/digest columns from jobs.
+def migrate_companies_to_id_refs() -> None:
+    """One-time migration: replace company name columns with company_id FKs.
 
-    These were superseded by the per-user user_job_rankings table.
+    Backfills the companies registry from existing jobs.company and
+    user_companies.company values, points both tables at companies.id via a
+    new company_id column, then drops the old text columns.
     """
-    stmts = [
-        "ALTER TABLE jobs DROP COLUMN IF EXISTS tier",
-        "ALTER TABLE jobs DROP COLUMN IF EXISTS tier_order",
-        "ALTER TABLE jobs DROP COLUMN IF EXISTS reason",
-        "ALTER TABLE jobs DROP COLUMN IF EXISTS ranked_at",
-        "ALTER TABLE jobs DROP COLUMN IF EXISTS digested_at",
-    ]
     with _connect() as conn, conn.cursor() as cur:
-        for stmt in stmts:
-            cur.execute(stmt)
-    logger.info("Dropped global ranking/digest columns from jobs table")
+        cur.execute("ALTER TABLE jobs ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id)")
+        cur.execute("ALTER TABLE user_companies ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id)")
+
+        cur.execute("""
+            INSERT INTO companies (name, tracked)
+            SELECT DISTINCT company, FALSE FROM jobs WHERE company IS NOT NULL AND company <> ''
+            ON CONFLICT (name) DO NOTHING
+        """)
+        cur.execute("""
+            INSERT INTO companies (name, tracked)
+            SELECT DISTINCT company, FALSE FROM user_companies WHERE company IS NOT NULL AND company <> ''
+            ON CONFLICT (name) DO NOTHING
+        """)
+
+        cur.execute("""
+            UPDATE jobs SET company_id = c.id
+            FROM companies c
+            WHERE c.name = jobs.company AND jobs.company_id IS NULL
+        """)
+        cur.execute("""
+            UPDATE user_companies SET company_id = c.id
+            FROM companies c
+            WHERE c.name = user_companies.company AND user_companies.company_id IS NULL
+        """)
+
+        cur.execute("ALTER TABLE user_companies ALTER COLUMN company_id SET NOT NULL")
+        cur.execute("ALTER TABLE user_companies DROP CONSTRAINT IF EXISTS user_companies_pkey")
+        cur.execute("ALTER TABLE user_companies ADD PRIMARY KEY (user_id, company_id)")
+
+        cur.execute("ALTER TABLE jobs DROP COLUMN company")
+        cur.execute("ALTER TABLE user_companies DROP COLUMN company")
+    logger.info("Migrated jobs and user_companies to reference companies via company_id")
 
 
 def insert_jobs(jobs: list[Job]) -> int:
@@ -266,28 +302,40 @@ def insert_jobs(jobs: list[Job]) -> int:
     if not jobs:
         return 0
 
-    rows = [
-        (
-            job.url_hash,
-            job.title,
-            job.company,
-            job.location,
-            job.url,
-            job.source,
-            job.raw_snippet,
-            job.description,
-            job.fetched_at,
-        )
-        for job in jobs
-    ]
+    company_names = sorted({job.company for job in jobs if job.company})
 
     sql = """
-        INSERT INTO jobs (url_hash, title, company, location, url, source, raw_snippet, description, fetched_at)
+        INSERT INTO jobs (url_hash, title, company_id, location, url, source, raw_snippet, description, fetched_at)
         VALUES %s
         ON CONFLICT (url_hash) DO NOTHING
     """
 
     with _connect() as conn, conn.cursor() as cur:
+        company_ids: dict[str, int] = {}
+        if company_names:
+            psycopg2.extras.execute_values(
+                cur,
+                "INSERT INTO companies (name, tracked) VALUES %s ON CONFLICT (name) DO NOTHING",
+                [(name, False) for name in company_names],
+            )
+            cur.execute("SELECT id, name FROM companies WHERE name = ANY(%s)", (company_names,))
+            company_ids = {name: cid for cid, name in cur.fetchall()}
+
+        rows = [
+            (
+                job.url_hash,
+                job.title,
+                company_ids.get(job.company),
+                job.location,
+                job.url,
+                job.source,
+                job.raw_snippet,
+                job.description,
+                job.fetched_at,
+            )
+            for job in jobs
+        ]
+
         psycopg2.extras.execute_values(cur, sql, rows)
         inserted = cur.rowcount
 
@@ -298,9 +346,10 @@ def insert_jobs(jobs: list[Job]) -> int:
 def get_unranked_jobs_for_user(user_id: int) -> list[Job]:
     """Return jobs from companies the user follows that haven't been ranked for them yet."""
     sql = """
-        SELECT j.id, j.url_hash, j.title, j.company, j.location, j.url, j.source, j.raw_snippet, j.description, j.fetched_at
+        SELECT j.id, j.url_hash, j.title, c.name, j.location, j.url, j.source, j.raw_snippet, j.description, j.fetched_at
         FROM jobs j
-        JOIN user_companies uc ON uc.user_id = %s AND uc.company = j.company
+        JOIN user_companies uc ON uc.user_id = %s AND uc.company_id = j.company_id
+        LEFT JOIN companies c ON c.id = j.company_id
         LEFT JOIN user_job_rankings ujr ON ujr.user_id = %s AND ujr.job_id = j.id
         WHERE ujr.job_id IS NULL
         ORDER BY j.fetched_at DESC
@@ -334,10 +383,11 @@ def fetch_jobs_by_ids(ids: list[int]) -> list[Job]:
     if not ids:
         return []
     sql = """
-        SELECT url_hash, title, company, location, url, source, raw_snippet, description, fetched_at
-        FROM jobs
-        WHERE id = ANY(%s)
-        ORDER BY fetched_at DESC
+        SELECT j.url_hash, j.title, c.name, j.location, j.url, j.source, j.raw_snippet, j.description, j.fetched_at
+        FROM jobs j
+        LEFT JOIN companies c ON c.id = j.company_id
+        WHERE j.id = ANY(%s)
+        ORDER BY j.fetched_at DESC
     """
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(sql, (ids,))
