@@ -4,9 +4,17 @@ from datetime import date, datetime, timezone, timedelta
 from flask import Flask, jsonify, request
 import psycopg2
 import psycopg2.extras
-from config.config import DATABASE_URL
+from config.config import DATABASE_URL, FLASK_SECRET_KEY, APP_BASE_URL
+from src.auth import init_auth
+from src.database import create_tables
 
 app = Flask(__name__)
+app.secret_key = FLASK_SECRET_KEY
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = APP_BASE_URL.startswith('https')
+
+create_tables()
+init_auth(app)
 
 
 def _connect():

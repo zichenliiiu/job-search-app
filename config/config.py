@@ -14,3 +14,9 @@ GMAIL_CREDENTIALS_PATH = os.getenv('GMAIL_CREDENTIALS_PATH', 'config/credentials
 GMAIL_TOKEN_PATH = os.getenv('GMAIL_TOKEN_PATH', 'config/token.json')
 LINKEDIN_LI_AT = os.getenv('LINKEDIN_LI_AT')
 LINKEDIN_JSESSIONID = os.getenv('LINKEDIN_JSESSIONID')
+
+# User login (Google OAuth)
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+FLASK_SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
+APP_BASE_URL = os.getenv('APP_BASE_URL', 'http://localhost:5173')

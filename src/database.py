@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Postgres persistence layer (Supabase).
 # Called by fetch_jobs.py, send_digest.py, and test_fetch.py.
 #
@@ -38,6 +40,18 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 """
 
+CREATE_USERS_TABLE = """
+CREATE TABLE IF NOT EXISTS users (
+    id            SERIAL PRIMARY KEY,
+    provider      TEXT NOT NULL,
+    provider_sub  TEXT NOT NULL,
+    email         TEXT NOT NULL,
+    name          TEXT,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (provider, provider_sub)
+);
+"""
+
 
 def _connect():
     return psycopg2.connect(DATABASE_URL)
@@ -46,7 +60,45 @@ def _connect():
 def create_tables() -> None:
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(CREATE_JOBS_TABLE)
+        cur.execute(CREATE_USERS_TABLE)
     logger.info("Database tables ready")
+
+
+def get_or_create_user(provider: str, provider_sub: str, email: str, name: str) -> dict:
+    """Look up a user by (provider, provider_sub), creating one if it doesn't exist.
+
+    Returns a dict with id, provider, provider_sub, email, name.
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, provider, provider_sub, email, name FROM users WHERE provider = %s AND provider_sub = %s",
+            (provider, provider_sub),
+        )
+        row = cur.fetchone()
+        if row is None:
+            cur.execute(
+                """
+                INSERT INTO users (provider, provider_sub, email, name)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, provider, provider_sub, email, name
+                """,
+                (provider, provider_sub, email, name),
+            )
+            row = cur.fetchone()
+            logger.info(f"Created new user: {email} ({provider})")
+
+    return {"id": row[0], "provider": row[1], "provider_sub": row[2], "email": row[3], "name": row[4]}
+
+
+def get_user_by_id(user_id: int) -> dict | None:
+    """Look up a user by their internal id. Returns None if not found."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, provider, provider_sub, email, name FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+
+    if row is None:
+        return None
+    return {"id": row[0], "provider": row[1], "provider_sub": row[2], "email": row[3], "name": row[4]}
 
 
 def migrate_add_ranking_columns() -> None:
