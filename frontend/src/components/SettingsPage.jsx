@@ -4,6 +4,8 @@ import { ArrowLeft, X } from 'lucide-react';
 export default function SettingsPage({ onBack }) {
   const [criteriaText, setCriteriaText] = useState('');
   const [followed, setFollowed] = useState([]);
+  const [untracked, setUntracked] = useState([]);
+  const [trackedNames, setTrackedNames] = useState([]);
   const [newCompany, setNewCompany] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -16,6 +18,8 @@ export default function SettingsPage({ onBack }) {
     ]).then(([criteria, companies]) => {
       setCriteriaText(criteria.criteria_text || '');
       setFollowed(companies.followed || []);
+      setUntracked(companies.untracked || []);
+      setTrackedNames(companies.tracked || []);
       setLoading(false);
     });
   }, []);
@@ -24,6 +28,9 @@ export default function SettingsPage({ onBack }) {
     const name = newCompany.trim();
     if (!name || followed.includes(name)) return;
     setFollowed(f => [...f, name]);
+    if (!trackedNames.includes(name) && !untracked.includes(name)) {
+      setUntracked(u => [...u, name]);
+    }
     setNewCompany('');
   };
 
@@ -82,8 +89,9 @@ export default function SettingsPage({ onBack }) {
         {followed.length > 0 && (
           <div className="company-chips">
             {followed.map(c => (
-              <span className="chip" key={c}>
+              <span className={`chip${untracked.includes(c) ? ' chip-pending' : ''}`} key={c}>
                 {c}
+                {untracked.includes(c) && <span className="chip-pending-label">pending</span>}
                 <button onClick={() => removeCompany(c)} aria-label={`Remove ${c}`}><X size={12} /></button>
               </span>
             ))}

@@ -12,6 +12,7 @@ from src.database import (
     save_user_criteria,
     get_followed_companies,
     set_followed_companies,
+    get_all_companies,
 )
 
 app = Flask(__name__)
@@ -149,9 +150,15 @@ def put_criteria():
 @app.route("/api/companies", methods=["GET"])
 @login_required
 def get_companies():
-    """Return the companies the user follows."""
+    """Return the companies the user follows, plus which of those are not yet tracked."""
+    all_companies = get_all_companies()
+    tracked = {c["name"] for c in all_companies if c["tracked"]}
+    untracked = {c["name"] for c in all_companies if not c["tracked"]}
+    followed = get_followed_companies(current_user_id())
     return jsonify({
-        "followed": get_followed_companies(current_user_id()),
+        "followed": followed,
+        "untracked": [c for c in followed if c in untracked],
+        "tracked": sorted(tracked),
     })
 
 

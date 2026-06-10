@@ -8,6 +8,10 @@ from __future__ import annotations
 #   fetch_undigested_jobs()          returns all jobs not yet sent in a digest (digested_at IS NULL), newest first
 #   mark_jobs_digested(url_hashes)   stamps digested_at=NOW() on the given rows after a successful digest send
 #   save_ranking(result, all_jobs)   writes tier/tier_order/reason/ranked_at to the ranked rows; marks the rest 'skip'
+#   get_all_companies()              returns all companies in the registry with their tracked status
+#   add_company(name, tracked)       adds a company to the registry (or updates tracked status if it exists)
+#   register_companies(names)        adds any unrecognized names to the registry as untracked (pending)
+#   set_company_tracked(name, x)     marks a company as tracked (Google Alert on its career site) or not
 
 import logging
 from datetime import datetime, timezone
@@ -62,6 +66,15 @@ CREATE TABLE IF NOT EXISTS user_companies (
 );
 """
 
+CREATE_COMPANIES_TABLE = """
+CREATE TABLE IF NOT EXISTS companies (
+    id            SERIAL PRIMARY KEY,
+    name          TEXT UNIQUE NOT NULL,
+    tracked       BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+"""
+
 CREATE_USER_JOB_RANKINGS_TABLE = """
 CREATE TABLE IF NOT EXISTS user_job_rankings (
     user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -85,6 +98,7 @@ def create_tables() -> None:
         cur.execute(CREATE_USERS_TABLE)
         cur.execute(CREATE_USER_CRITERIA_TABLE)
         cur.execute(CREATE_USER_COMPANIES_TABLE)
+        cur.execute(CREATE_COMPANIES_TABLE)
         cur.execute(CREATE_USER_JOB_RANKINGS_TABLE)
     logger.info("Database tables ready")
 
@@ -173,6 +187,7 @@ def get_followed_companies(user_id: int) -> list[str]:
 
 def set_followed_companies(user_id: int, companies: list[str]) -> None:
     """Replace the user's followed companies with the given list."""
+    register_companies(companies)
     with _connect() as conn, conn.cursor() as cur:
         cur.execute("DELETE FROM user_companies WHERE user_id = %s", (user_id,))
         if companies:
@@ -182,6 +197,50 @@ def set_followed_companies(user_id: int, companies: list[str]) -> None:
                 [(user_id, company) for company in companies],
             )
     logger.info(f"Set {len(companies)} followed companies for user {user_id}")
+
+
+def register_companies(names: list[str]) -> None:
+    """Add any unrecognized company names to the registry as untracked (pending).
+
+    Existing companies, and their tracked status, are left untouched.
+    """
+    if not names:
+        return
+    with _connect() as conn, conn.cursor() as cur:
+        psycopg2.extras.execute_values(
+            cur,
+            "INSERT INTO companies (name, tracked) VALUES %s ON CONFLICT (name) DO NOTHING",
+            [(name, False) for name in names],
+        )
+
+
+def get_all_companies() -> list[dict]:
+    """Return all companies, alphabetically, with their tracked status."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, name, tracked FROM companies ORDER BY name")
+        rows = cur.fetchall()
+    return [{"id": r[0], "name": r[1], "tracked": r[2]} for r in rows]
+
+
+def add_company(name: str, tracked: bool = False) -> None:
+    """Add a company to the registry, or update its tracked status if it already exists."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO companies (name, tracked)
+            VALUES (%s, %s)
+            ON CONFLICT (name) DO UPDATE SET tracked = EXCLUDED.tracked
+            """,
+            (name, tracked),
+        )
+    logger.info(f"Added company '{name}' (tracked={tracked})")
+
+
+def set_company_tracked(name: str, tracked: bool) -> None:
+    """Mark a company as tracked (Google Alert set on its career site) or not."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("UPDATE companies SET tracked = %s WHERE name = %s", (tracked, name))
+    logger.info(f"Set company '{name}' tracked={tracked}")
 
 
 def migrate_drop_global_ranking_columns() -> None:
