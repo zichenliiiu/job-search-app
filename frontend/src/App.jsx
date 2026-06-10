@@ -5,10 +5,12 @@ import PageHeader from './components/PageHeader';
 import SummaryRow from './components/SummaryRow';
 import Section from './components/Section';
 import LoginPage from './components/LoginPage';
+import SettingsPage from './components/SettingsPage';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [view, setView] = useState('feed');
   const [dates, setDates] = useState([]);
   const [dateIdx, setDateIdx] = useState(0);
   const [feed, setFeed] = useState({ topPicks: [], nextBest: [], syncedAt: '' });
@@ -54,17 +56,28 @@ export default function App() {
   return (
     <div className="app">
       <main className="main">
-        <TopBar dates={dates} dateIdx={dateIdx} setDateIdx={setDateIdx} user={user} onLogout={handleLogout} />
-        <div className="content">
-          <PageHeader topCount={feed.topPicks.length} syncedAt={feed.syncedAt} />
-          <SummaryRow topCount={feed.topPicks.length} nextCount={feed.nextBest.length} />
-          {!loading && (
-            <>
-              <Section kind="top"  icon={Star}        title="Top picks" jobs={feed.topPicks} />
-              <Section kind="next" icon={TrendingUp}  title="Next best" jobs={feed.nextBest} />
-            </>
-          )}
-        </div>
+        <TopBar
+          dates={dates}
+          dateIdx={dateIdx}
+          setDateIdx={setDateIdx}
+          user={user}
+          onLogout={handleLogout}
+          onSettings={() => setView('settings')}
+        />
+        {view === 'settings' ? (
+          <SettingsPage onBack={() => setView('feed')} />
+        ) : (
+          <div className="content">
+            <PageHeader topCount={feed.topPicks.length} syncedAt={feed.syncedAt} />
+            <SummaryRow topCount={feed.topPicks.length} nextCount={feed.nextBest.length} />
+            {!loading && (
+              <>
+                <Section kind="top"  icon={Star}        title="Top picks" jobs={feed.topPicks} />
+                <Section kind="next" icon={TrendingUp}  title="Next best" jobs={feed.nextBest} />
+              </>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );

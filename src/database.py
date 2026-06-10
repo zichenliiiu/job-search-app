@@ -52,6 +52,21 @@ CREATE TABLE IF NOT EXISTS users (
 );
 """
 
+CREATE_USER_CRITERIA_TABLE = """
+CREATE TABLE IF NOT EXISTS user_criteria (
+    user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    criteria_text TEXT NOT NULL DEFAULT ''
+);
+"""
+
+CREATE_USER_COMPANIES_TABLE = """
+CREATE TABLE IF NOT EXISTS user_companies (
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    company       TEXT NOT NULL,
+    PRIMARY KEY (user_id, company)
+);
+"""
+
 
 def _connect():
     return psycopg2.connect(DATABASE_URL)
@@ -61,6 +76,8 @@ def create_tables() -> None:
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(CREATE_JOBS_TABLE)
         cur.execute(CREATE_USERS_TABLE)
+        cur.execute(CREATE_USER_CRITERIA_TABLE)
+        cur.execute(CREATE_USER_COMPANIES_TABLE)
     logger.info("Database tables ready")
 
 
@@ -99,6 +116,63 @@ def get_user_by_id(user_id: int) -> dict | None:
     if row is None:
         return None
     return {"id": row[0], "provider": row[1], "provider_sub": row[2], "email": row[3], "name": row[4]}
+
+
+def get_user_criteria(user_id: int) -> dict:
+    """Return {criteria_text} for the user, defaulting to an empty string."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT criteria_text FROM user_criteria WHERE user_id = %s", (user_id,))
+        row = cur.fetchone()
+
+    if row is None:
+        return {"criteria_text": ""}
+    return {"criteria_text": row[0]}
+
+
+def save_user_criteria(user_id: int, criteria_text: str) -> None:
+    """Upsert the user's ranking criteria text."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO user_criteria (user_id, criteria_text)
+            VALUES (%s, %s)
+            ON CONFLICT (user_id) DO UPDATE
+            SET criteria_text = EXCLUDED.criteria_text
+            """,
+            (user_id, criteria_text),
+        )
+    logger.info(f"Saved criteria for user {user_id}")
+
+
+def get_distinct_companies() -> list[str]:
+    """Return all distinct, non-empty company names seen in the jobs table, alphabetically."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT DISTINCT company FROM jobs WHERE company IS NOT NULL AND company != '' ORDER BY company"
+        )
+        rows = cur.fetchall()
+    return [row[0] for row in rows]
+
+
+def get_followed_companies(user_id: int) -> list[str]:
+    """Return the list of companies the user follows, alphabetically."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT company FROM user_companies WHERE user_id = %s ORDER BY company", (user_id,))
+        rows = cur.fetchall()
+    return [row[0] for row in rows]
+
+
+def set_followed_companies(user_id: int, companies: list[str]) -> None:
+    """Replace the user's followed companies with the given list."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("DELETE FROM user_companies WHERE user_id = %s", (user_id,))
+        if companies:
+            psycopg2.extras.execute_values(
+                cur,
+                "INSERT INTO user_companies (user_id, company) VALUES %s",
+                [(user_id, company) for company in companies],
+            )
+    logger.info(f"Set {len(companies)} followed companies for user {user_id}")
 
 
 def migrate_add_ranking_columns() -> None:

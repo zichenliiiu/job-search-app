@@ -5,8 +5,15 @@ from flask import Flask, jsonify, request
 import psycopg2
 import psycopg2.extras
 from config.config import DATABASE_URL, FLASK_SECRET_KEY, APP_BASE_URL
-from src.auth import init_auth
-from src.database import create_tables
+from src.auth import init_auth, login_required, current_user_id
+from src.database import (
+    create_tables,
+    get_user_criteria,
+    save_user_criteria,
+    get_distinct_companies,
+    get_followed_companies,
+    set_followed_companies,
+)
 
 app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
@@ -122,6 +129,39 @@ def get_feed():
         "nextBest": next_best,
         "syncedAt": synced_at or "",
     })
+
+@app.route("/api/criteria", methods=["GET"])
+@login_required
+def get_criteria():
+    return jsonify(get_user_criteria(current_user_id()))
+
+
+@app.route("/api/criteria", methods=["PUT"])
+@login_required
+def put_criteria():
+    data = request.get_json(force=True) or {}
+    save_user_criteria(current_user_id(), criteria_text=data.get("criteria_text", ""))
+    return jsonify({"ok": True})
+
+
+@app.route("/api/companies", methods=["GET"])
+@login_required
+def get_companies():
+    """Return all companies seen in the job pool, plus which ones the user follows."""
+    return jsonify({
+        "all": get_distinct_companies(),
+        "followed": get_followed_companies(current_user_id()),
+    })
+
+
+@app.route("/api/companies", methods=["PUT"])
+@login_required
+def put_companies():
+    data = request.get_json(force=True) or {}
+    companies = data.get("companies", [])
+    set_followed_companies(current_user_id(), companies)
+    return jsonify({"ok": True})
+
 
 if __name__ == "__main__":
     app.run(port=5001, debug=True)

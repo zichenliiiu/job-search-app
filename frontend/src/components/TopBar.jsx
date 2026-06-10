@@ -1,6 +1,6 @@
-import { ChevronLeft, ChevronRight, Calendar, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, LogOut, Settings } from 'lucide-react';
 
-export default function TopBar({ dates, dateIdx, setDateIdx, user, onLogout }) {
+export default function TopBar({ dates, dateIdx, setDateIdx, user, onLogout, onSettings }) {
   const d = dates[dateIdx];
   return (
     <header className="topbar">
@@ -32,10 +32,16 @@ export default function TopBar({ dates, dateIdx, setDateIdx, user, onLogout }) {
           </button>
         </div>
         {user && (
-          <button className="btn btn-ghost" onClick={onLogout} title={user.email}>
-            <span className="ic"><LogOut size={14} /></span>
-            Sign out
-          </button>
+          <>
+            <button className="btn btn-ghost" onClick={onSettings}>
+              <span className="ic"><Settings size={14} /></span>
+              Settings
+            </button>
+            <button className="btn btn-ghost" onClick={onLogout} title={user.email}>
+              <span className="ic"><LogOut size={14} /></span>
+              Sign out
+            </button>
+          </>
         )}
       </div>
     </header>

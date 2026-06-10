@@ -18,7 +18,8 @@ src/
   job_class.py         Job dataclass — shared data model across all modules
   gmail_fetcher.py     Gmail API client — fetches unread emails, scrapes job descriptions
   parsers.py           Email HTML parsers + URL→company extractor — no network I/O
-  database.py          Postgres layer — insert, query, and rank jobs
+  database.py          Postgres layer — insert, query, and rank jobs; users/criteria/companies tables
+  auth.py              Google OAuth login (Authlib) — session cookie auth, /api/auth/* routes
   ranker.py            Claude-powered scorer — returns tiered RankerResult
   email_digest.py      HTML email builder and Gmail SMTP sender
   resume_generator.py  Claude-powered resume tailor — selects and rewrites bullets for a role
@@ -26,14 +27,15 @@ src/
 
 config/
   resume.txt           Your resume (plain text) — read by ranker.py and resume_generator.py
-  criteria.txt         What you're looking for — read by ranker.py at runtime
+  criteria.txt         What you're looking for — original source for the global ranker (see
+                       "Authentication & Per-User Settings" — per-user criteria now lives in DB)
   job_description.txt  Job description to tailor resume against — read by resume_generator.py
   resume_prompt.txt    Prompt instructions for resume tailoring — edit to iterate on behavior
 
 frontend/              React web app (Vite) — displays ranked openings
   src/
-    App.jsx            Top-level shell; fetches dates then feed from API on mount/date change
-    components/        TopBar, PageHeader, SummaryRow, Section, JobCard
+    App.jsx            Top-level shell; auth check, then fetches dates/feed; switches feed/settings views
+    components/        TopBar, PageHeader, SummaryRow, Section, JobCard, LoginPage, SettingsPage
     styles/            tokens.css (design tokens), app.css (view styles)
   public/favicon.svg
   index.html / vite.config.js / package.json
@@ -99,6 +101,55 @@ DB column → frontend field mapping:
   salary     → null    (not stored in DB; field reserved for future enrichment)
 ```
 
+> **Note:** `/api/dates` and `/api/feed` are not yet user-scoped — they still read the global
+> `tier`/`tier_order`/`reason`/`ranked_at` columns on `jobs`, populated by the single global
+> `send_digest.py` run (using `config/criteria.txt`). See "Authentication & Per-User Settings"
+> below for what's been built so far toward making this per-user, and what's still outstanding.
+
+### Authentication & Per-User Settings
+
+Login is handled via Google OAuth (Authlib), with Flask session cookies. Vercel rewrites `/api/*`
+to the Railway backend, so the frontend and API are same-origin and cookies work without CORS.
+
+```
+users
+  id, provider, provider_sub, email, name, created_at
+  — one row per (provider, provider_sub), created on first login
+
+user_criteria
+  user_id (PK, FK → users), criteria_text
+  — free-text ranking criteria, replaces config/criteria.txt on a per-user basis
+
+user_companies
+  user_id (FK → users), company
+  — companies the user follows; PK is (user_id, company)
+```
+
+Auth routes (`src/auth.py`, mounted at `/api/auth`):
+```
+GET  /api/auth/login/google      redirect to Google's OAuth consent screen
+GET  /api/auth/callback/google   exchange code, get_or_create_user(), set session, redirect to /
+POST /api/auth/logout            clear session
+GET  /api/auth/me                return {id, email, name, ...} or 401 if not logged in
+```
+
+Settings routes (`api.py`, all `@login_required`):
+```
+GET  /api/criteria     → { criteria_text }
+PUT  /api/criteria     ← { criteria_text }                 upserts user_criteria
+
+GET  /api/companies    → { all: [company...], followed: [company...] }
+                          "all" = get_distinct_companies() from jobs table
+PUT  /api/companies    ← { companies: [company...] }       replaces user_companies
+```
+
+**Status:** Settings UI (`SettingsPage.jsx`) reads/writes these tables and is live for user 1
+(zichenliu9@gmail.com), seeded with their existing `config/criteria.txt` and all 54 companies
+currently in the `jobs` table. However, `/api/dates` and `/api/feed` (and the
+`send_digest.py`/`ranker.py` pipeline) do NOT yet consume `user_criteria` / `user_companies` —
+they still operate on the single global `jobs.tier`/`tier_order`/`reason` columns produced by one
+shared ranking run. Making the feed and digest per-user is the next phase (see To-Do).
+
 ### Data flow (generate_resume.py)
 
 ```
@@ -147,6 +198,12 @@ The date scrubber in the top bar shows only dates for which ranked jobs exist in
 - [ ] **Fine-tune ranking prompt** — iterate on `config/criteria.txt` and the system prompt in `src/ranker.py` based on `eval/eval.py` results.
 
 - [ ] **Fine-tune resume generation prompt** — iterate on `config/resume_prompt.txt` based on output quality; focus on bullet selection relevance, wording match to JD, and length discipline. The prompt file is intentionally separate so it can be edited without touching code.
+
+- [ ] **Rewire `/api/dates` and `/api/feed` to per-user data** — filter by the logged-in user's `user_companies`, and score against their `user_criteria` instead of the single global `config/criteria.txt` run.
+
+- [ ] **Per-user ranking & digest pipeline** — `send_digest.py`/`ranker.py` currently rank the global job pool once against `config/criteria.txt` and email `RECIPIENT_EMAIL`. Needs to become: for each user, rank their followed companies' jobs against their `user_criteria.criteria_text` and send to their own email.
+
+- [ ] **Company name dedup** — `jobs.company` has near-duplicate values for the same company (e.g. `Openai`/`OpenAI`, `Google`/`Google DeepMind`, `Primeintellect`/`Prime Intellect`, `Sierra`/`Sierra Studio`, `Gleanwork`/`Glean`, `Metacareers`/`Meta`). Normalize in `parsers.py` so company-following matches reliably.
 
 ---
 
