@@ -3,7 +3,6 @@ import { ArrowLeft, X } from 'lucide-react';
 
 export default function SettingsPage({ onBack }) {
   const [criteriaText, setCriteriaText] = useState('');
-  const [allCompanies, setAllCompanies] = useState([]);
   const [followed, setFollowed] = useState([]);
   const [newCompany, setNewCompany] = useState('');
   const [loading, setLoading] = useState(true);
@@ -16,15 +15,10 @@ export default function SettingsPage({ onBack }) {
       fetch('/api/companies', { credentials: 'include' }).then(r => r.json()),
     ]).then(([criteria, companies]) => {
       setCriteriaText(criteria.criteria_text || '');
-      setAllCompanies(companies.all || []);
       setFollowed(companies.followed || []);
       setLoading(false);
     });
   }, []);
-
-  const toggleCompany = (company) => {
-    setFollowed(f => f.includes(company) ? f.filter(c => c !== company) : [...f, company]);
-  };
 
   const addCompany = () => {
     const name = newCompany.trim();
@@ -60,8 +54,6 @@ export default function SettingsPage({ onBack }) {
 
   if (loading) return null;
 
-  const extraCompanies = followed.filter(c => !allCompanies.includes(c));
-
   return (
     <div className="content settings-page">
       <div className="page-head">
@@ -87,9 +79,9 @@ export default function SettingsPage({ onBack }) {
         <h2>Companies you follow</h2>
         <p className="settings-hint">Only jobs from these companies will be ranked and included in your digest.</p>
 
-        {extraCompanies.length > 0 && (
+        {followed.length > 0 && (
           <div className="company-chips">
-            {extraCompanies.map(c => (
+            {followed.map(c => (
               <span className="chip" key={c}>
                 {c}
                 <button onClick={() => removeCompany(c)} aria-label={`Remove ${c}`}><X size={12} /></button>
@@ -107,19 +99,6 @@ export default function SettingsPage({ onBack }) {
             placeholder="Add a company by name..."
           />
           <button className="btn btn-secondary" onClick={addCompany}>Add</button>
-        </div>
-
-        <div className="company-list">
-          {allCompanies.map(c => (
-            <label className="company-item" key={c}>
-              <input
-                type="checkbox"
-                checked={followed.includes(c)}
-                onChange={() => toggleCompany(c)}
-              />
-              {c}
-            </label>
-          ))}
         </div>
       </section>
 

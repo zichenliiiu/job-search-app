@@ -10,7 +10,6 @@ from src.database import (
     create_tables,
     get_user_criteria,
     save_user_criteria,
-    get_distinct_companies,
     get_followed_companies,
     set_followed_companies,
 )
@@ -150,9 +149,8 @@ def put_criteria():
 @app.route("/api/companies", methods=["GET"])
 @login_required
 def get_companies():
-    """Return all companies seen in the job pool, plus which ones the user follows."""
+    """Return the companies the user follows."""
     return jsonify({
-        "all": get_distinct_companies(),
         "followed": get_followed_companies(current_user_id()),
     })
 

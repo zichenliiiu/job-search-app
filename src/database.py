@@ -163,16 +163,6 @@ def save_user_criteria(user_id: int, criteria_text: str) -> None:
     logger.info(f"Saved criteria for user {user_id}")
 
 
-def get_distinct_companies() -> list[str]:
-    """Return all distinct, non-empty company names seen in the jobs table, alphabetically."""
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute(
-            "SELECT DISTINCT company FROM jobs WHERE company IS NOT NULL AND company != '' ORDER BY company"
-        )
-        rows = cur.fetchall()
-    return [row[0] for row in rows]
-
-
 def get_followed_companies(user_id: int) -> list[str]:
     """Return the list of companies the user follows, alphabetically."""
     with _connect() as conn, conn.cursor() as cur:
