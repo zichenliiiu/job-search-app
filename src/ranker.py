@@ -1,12 +1,15 @@
 # Claude-powered job ranker.
-# Called by run_digest.py after fetching recent jobs from the database.
+# Called by send_digest.py after fetching unranked jobs for a user from the database.
 #
-#   rank_jobs(jobs)   sends all jobs to Claude in a single batched prompt,
-#                     categorizes each against config/resume.txt + config/criteria.txt,
+#   rank_jobs(jobs, criteria_text)   sends all jobs to Claude in a single batched prompt,
+#                     categorizes each against config/resume.txt + the given criteria text
+#                     (defaults to config/criteria.txt if not provided),
 #                     and returns a RankerResult with two tiers:
-#                       .top       — matches the "top" description in criteria.txt
-#                       .next_best — matches the "next best" description in criteria.txt
+#                       .top       — matches the "top" description in the criteria
+#                       .next_best — matches the "next best" description in the criteria
 #                     (jobs matching "skip" are dropped)
+
+from __future__ import annotations
 
 import json
 import logging
@@ -57,12 +60,12 @@ def _build_job_block(index: int, job: Job, desc_cap: int) -> str:
     return f"{header}\n{description}" if description else header
 
 
-def rank_jobs(jobs: list[Job]) -> RankerResult:
+def rank_jobs(jobs: list[Job], criteria_text: str | None = None) -> RankerResult:
     if not jobs:
         return RankerResult(top=[], next_best=[])
 
     resume = _load_text('config/resume.txt')
-    criteria = _load_text('config/criteria.txt')
+    criteria = criteria_text if criteria_text is not None else _load_text('config/criteria.txt')
 
     desc_cap = DEFAULT_DESC_CAP
     job_blocks = [_build_job_block(i, j, desc_cap) for i, j in enumerate(jobs)]

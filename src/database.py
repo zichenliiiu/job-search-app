@@ -31,12 +31,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     source        TEXT NOT NULL,
     raw_snippet   TEXT,
     description   TEXT,
-    fetched_at    TIMESTAMPTZ NOT NULL,
-    digested_at   TIMESTAMPTZ,
-    tier          TEXT,
-    tier_order    INTEGER,
-    reason        TEXT,
-    ranked_at     TIMESTAMPTZ
+    fetched_at    TIMESTAMPTZ NOT NULL
 );
 """
 
@@ -67,6 +62,18 @@ CREATE TABLE IF NOT EXISTS user_companies (
 );
 """
 
+CREATE_USER_JOB_RANKINGS_TABLE = """
+CREATE TABLE IF NOT EXISTS user_job_rankings (
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    job_id        INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    tier          TEXT NOT NULL,
+    tier_order    INTEGER,
+    reason        TEXT,
+    ranked_at     TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (user_id, job_id)
+);
+"""
+
 
 def _connect():
     return psycopg2.connect(DATABASE_URL)
@@ -78,7 +85,19 @@ def create_tables() -> None:
         cur.execute(CREATE_USERS_TABLE)
         cur.execute(CREATE_USER_CRITERIA_TABLE)
         cur.execute(CREATE_USER_COMPANIES_TABLE)
+        cur.execute(CREATE_USER_JOB_RANKINGS_TABLE)
     logger.info("Database tables ready")
+
+
+def get_all_users() -> list[dict]:
+    """Return all registered users."""
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT id, provider, provider_sub, email, name FROM users")
+        rows = cur.fetchall()
+    return [
+        {"id": r[0], "provider": r[1], "provider_sub": r[2], "email": r[3], "name": r[4]}
+        for r in rows
+    ]
 
 
 def get_or_create_user(provider: str, provider_sub: str, email: str, name: str) -> dict:
@@ -175,18 +194,22 @@ def set_followed_companies(user_id: int, companies: list[str]) -> None:
     logger.info(f"Set {len(companies)} followed companies for user {user_id}")
 
 
-def migrate_add_ranking_columns() -> None:
-    """One-time migration: add ranking columns to existing jobs table."""
+def migrate_drop_global_ranking_columns() -> None:
+    """One-time migration: drop the old global ranking/digest columns from jobs.
+
+    These were superseded by the per-user user_job_rankings table.
+    """
     stmts = [
-        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS tier       TEXT",
-        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS tier_order INTEGER",
-        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS reason     TEXT",
-        "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS ranked_at  TIMESTAMPTZ",
+        "ALTER TABLE jobs DROP COLUMN IF EXISTS tier",
+        "ALTER TABLE jobs DROP COLUMN IF EXISTS tier_order",
+        "ALTER TABLE jobs DROP COLUMN IF EXISTS reason",
+        "ALTER TABLE jobs DROP COLUMN IF EXISTS ranked_at",
+        "ALTER TABLE jobs DROP COLUMN IF EXISTS digested_at",
     ]
     with _connect() as conn, conn.cursor() as cur:
         for stmt in stmts:
             cur.execute(stmt)
-    logger.info("Ranking columns added to jobs table")
+    logger.info("Dropped global ranking/digest columns from jobs table")
 
 
 def insert_jobs(jobs: list[Job]) -> int:
@@ -223,21 +246,23 @@ def insert_jobs(jobs: list[Job]) -> int:
     return inserted
 
 
-def fetch_undigested_jobs() -> list[Job]:
-    """Return all jobs not yet sent in a digest (digested_at IS NULL), newest first."""
+def get_unranked_jobs_for_user(user_id: int) -> list[Job]:
+    """Return jobs from companies the user follows that haven't been ranked for them yet."""
     sql = """
-        SELECT url_hash, title, company, location, url, source, raw_snippet, description, fetched_at
-        FROM jobs
-        WHERE digested_at IS NULL
-        ORDER BY fetched_at DESC
+        SELECT j.id, j.url_hash, j.title, j.company, j.location, j.url, j.source, j.raw_snippet, j.description, j.fetched_at
+        FROM jobs j
+        JOIN user_companies uc ON uc.user_id = %s AND uc.company = j.company
+        LEFT JOIN user_job_rankings ujr ON ujr.user_id = %s AND ujr.job_id = j.id
+        WHERE ujr.job_id IS NULL
+        ORDER BY j.fetched_at DESC
     """
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute(sql)
+        cur.execute(sql, (user_id, user_id))
         rows = cur.fetchall()
 
     jobs = []
     for row in rows:
-        url_hash, title, company, location, url, source, raw_snippet, description, fetched_at = row
+        job_id, url_hash, title, company, location, url, source, raw_snippet, description, fetched_at = row
         job = Job(
             title=title or '',
             company=company or '',
@@ -247,10 +272,11 @@ def fetch_undigested_jobs() -> list[Job]:
             raw_snippet=raw_snippet or '',
             description=description or '',
             fetched_at=fetched_at,
+            id=job_id,
         )
         jobs.append(job)
 
-    logger.info(f"Fetched {len(jobs)} undigested jobs")
+    logger.info(f"Found {len(jobs)} unranked jobs for user {user_id}")
     return jobs
 
 
@@ -287,92 +313,44 @@ def fetch_jobs_by_ids(ids: list[int]) -> list[Job]:
     return jobs
 
 
-def fetch_digested_jobs() -> list[Job]:
-    """Return all jobs that have been sent in a digest, newest first."""
-    sql = """
-        SELECT url_hash, title, company, location, url, source, raw_snippet, description, fetched_at
-        FROM jobs
-        WHERE digested_at IS NOT NULL
-        ORDER BY fetched_at DESC
-    """
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute(sql)
-        rows = cur.fetchall()
-
-    jobs = []
-    for row in rows:
-        url_hash, title, company, location, url, source, raw_snippet, description, fetched_at = row
-        job = Job(
-            title=title or '',
-            company=company or '',
-            location=location or '',
-            url=url,
-            source=source,
-            raw_snippet=raw_snippet or '',
-            description=description or '',
-            fetched_at=fetched_at,
-        )
-        jobs.append(job)
-
-    logger.info(f"Fetched {len(jobs)} digested jobs")
-    return jobs
-
-
-def mark_jobs_digested(url_hashes: list[str]) -> None:
-    """Stamp digested_at=NOW() on the given jobs after a successful digest send."""
-    if not url_hashes:
-        return
-    sql = """
-        UPDATE jobs
-        SET digested_at = NOW()
-        WHERE url_hash = ANY(%s)
-    """
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute(sql, (url_hashes,))
-    logger.info(f"Marked {len(url_hashes)} jobs as digested")
-
-
-def save_ranking(result, all_jobs: list[Job]) -> None:
-    """Write ranking results back to the jobs rows.
+def save_user_ranking(user_id: int, result, all_jobs: list[Job]) -> None:
+    """Write a user's ranking results to user_job_rankings.
 
     Ranked jobs (top / next_best) get tier, tier_order, reason, and ranked_at.
-    Jobs categorized as 'skip' get tier='skip'.
+    The remaining jobs from all_jobs are recorded as tier='skip' so they aren't re-ranked.
     """
     now = datetime.now(timezone.utc)
-    ranked_hashes: set[str] = set()
+    ranked_ids: set[int] = set()
     rows = []
 
     for order, ranked_job in enumerate(result.top, start=1):
-        rows.append((ranked_job.job.url_hash, 'top', order, ranked_job.reason, now))
-        ranked_hashes.add(ranked_job.job.url_hash)
+        rows.append((user_id, ranked_job.job.id, 'top', order, ranked_job.reason, now))
+        ranked_ids.add(ranked_job.job.id)
 
     for order, ranked_job in enumerate(result.next_best, start=1):
-        rows.append((ranked_job.job.url_hash, 'next_best', order, ranked_job.reason, now))
-        ranked_hashes.add(ranked_job.job.url_hash)
+        rows.append((user_id, ranked_job.job.id, 'next_best', order, ranked_job.reason, now))
+        ranked_ids.add(ranked_job.job.id)
 
-    skip_hashes = [job.url_hash for job in all_jobs if job.url_hash not in ranked_hashes]
+    for job in all_jobs:
+        if job.id not in ranked_ids:
+            rows.append((user_id, job.id, 'skip', None, None, now))
 
     with _connect() as conn, conn.cursor() as cur:
-        if rows:
-            psycopg2.extras.execute_values(
-                cur,
-                """
-                UPDATE jobs
-                SET tier = data.tier, tier_order = data.tier_order,
-                    reason = data.reason, ranked_at = data.ranked_at
-                FROM (VALUES %s) AS data(url_hash, tier, tier_order, reason, ranked_at)
-                WHERE jobs.url_hash = data.url_hash
-                """,
-                rows,
-                template="(%s, %s, %s, %s, %s::timestamptz)",
-            )
-        if skip_hashes:
-            cur.execute(
-                "UPDATE jobs SET tier = 'skip', ranked_at = %s WHERE url_hash = ANY(%s)",
-                (now, skip_hashes),
-            )
+        psycopg2.extras.execute_values(
+            cur,
+            """
+            INSERT INTO user_job_rankings (user_id, job_id, tier, tier_order, reason, ranked_at)
+            VALUES %s
+            ON CONFLICT (user_id, job_id) DO NOTHING
+            """,
+            rows,
+            template="(%s, %s, %s, %s, %s, %s::timestamptz)",
+        )
 
-    logger.info(f"Saved ranking: {len(result.top)} top, {len(result.next_best)} next_best, {len(skip_hashes)} skip")
+    skip_count = len(all_jobs) - len(ranked_ids)
+    logger.info(
+        f"Saved ranking for user {user_id}: {len(result.top)} top, {len(result.next_best)} next_best, {skip_count} skip"
+    )
 
 
 

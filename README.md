@@ -10,25 +10,25 @@ Email-based job search digest with AI-powered ranking and resume generation.
 
 ```
 fetch_jobs.py          Entry point — fetches Gmail alerts, enriches descriptions, saves to DB (no AI, runs hourly)
-send_digest.py         Entry point — ranks all undigested jobs via Claude and sends the daily email digest
+send_digest.py         Entry point — for each user, ranks their unranked jobs via Claude and emails their digest
 generate_resume.py     Entry point — generates a tailored resume for a specific job
-api.py                 Flask API server — serves ranked jobs from Postgres to the frontend
+api.py                 Flask API server — serves each user's ranked jobs from Postgres to the frontend
 
 src/
   job_class.py         Job dataclass — shared data model across all modules
   gmail_fetcher.py     Gmail API client — fetches unread emails, scrapes job descriptions
   parsers.py           Email HTML parsers + URL→company extractor — no network I/O
-  database.py          Postgres layer — insert, query, and rank jobs; users/criteria/companies tables
+  database.py          Postgres layer — insert/query jobs; users/criteria/companies/rankings tables
   auth.py              Google OAuth login (Authlib) — session cookie auth, /api/auth/* routes
-  ranker.py            Claude-powered scorer — returns tiered RankerResult
+  ranker.py            Claude-powered scorer — returns tiered RankerResult for a given criteria text
   email_digest.py      HTML email builder and Gmail SMTP sender
   resume_generator.py  Claude-powered resume tailor — selects and rewrites bullets for a role
   pdf_converter.py     HTML→PDF converter with automatic font scaling to enforce 1-page limit
 
 config/
-  resume.txt           Your resume (plain text) — read by ranker.py and resume_generator.py
-  criteria.txt         What you're looking for — original source for the global ranker (see
-                       "Authentication & Per-User Settings" — per-user criteria now lives in DB)
+  resume.txt           Resume (plain text) — read by ranker.py and resume_generator.py for all users
+  criteria.txt         Legacy — original source for the global ranker, now only used as a fallback
+                       default in eval/eval.py. Per-user criteria lives in the user_criteria table.
   job_description.txt  Job description to tailor resume against — read by resume_generator.py
   resume_prompt.txt    Prompt instructions for resume tailoring — edit to iterate on behavior
 
@@ -58,20 +58,26 @@ The pipeline is split into two independent scripts with different cadences:
 3. database.insert_jobs(jobs)           writes to Postgres, deduplicates by url_hash
 ```
 
-**send_digest.py** (runs once daily at midnight SF time via GitHub Actions)
+**send_digest.py** (runs once daily at midnight SF time via GitHub Actions, loops over all users)
 ```
-1. database.fetch_undigested_jobs()     loads all jobs where digested_at IS NULL
+For each user:
+  1. database.get_followed_companies(user_id) / get_user_criteria(user_id)
+        skip the user if they follow no companies or have no criteria set
 
-2. ranker.rank_jobs(jobs)               sends the full undigested pool to Claude in one prompt,
-                                        returns RankerResult with top / next_best tiers
-   database.save_ranking(result, jobs)  writes tier / tier_order / reason / ranked_at
-                                        back to each job row; marks below-threshold jobs 'skip'
+  2. database.get_unranked_jobs_for_user(user_id)
+        jobs from their followed companies with no row yet in user_job_rankings for this user
 
-3. email_digest.send_digest(result)     renders HTML digest, sends via Gmail SMTP
-   database.mark_jobs_digested(hashes)  stamps digested_at=NOW() on sent jobs
+  3. ranker.rank_jobs(jobs, criteria_text)   sends that user's unranked jobs to Claude in one prompt,
+                                              returns RankerResult with top / next_best tiers
+     database.save_user_ranking(user_id, result, jobs)
+        writes (user_id, job_id, tier, tier_order, reason, ranked_at) to user_job_rankings;
+        jobs not in top/next_best are recorded as tier='skip' so they're never re-ranked for this user
+
+  4. email_digest.send_digest(result, recipient_email=user_email)
+        renders HTML digest, sends via Gmail SMTP to the user's own email
 ```
 
-Keeping fetch and rank separate ensures that `tier_order` is always globally consistent for the day's digest — the ranker always sees the full accumulated pool of undigested jobs in one shot, regardless of how many fetch runs have occurred.
+Keeping fetch and rank separate ensures `tier_order` is consistent within each user's daily batch — the ranker sees that user's full accumulated pool of unranked jobs in one shot, regardless of how many fetch runs have occurred. Because ranking is per-user, the same job can end up in different tiers (or be ranked at different times) for different users.
 
 ### Data flow (api.py → frontend)
 
@@ -80,12 +86,14 @@ Browser → Vite dev server (localhost:5173)
             └─ /api/* proxied → Flask (localhost:5001)
                   └─ queries Postgres
 
-GET /api/dates
-      └─ SELECT DISTINCT DATE(ranked_at) FROM jobs WHERE tier IN ('top','next_best')
+GET /api/dates   (login required)
+      └─ SELECT DISTINCT DATE(ranked_at) FROM user_job_rankings
+         WHERE user_id = <current user> AND tier IN ('top','next_best')
          Returns: [{ date, label, day }]  e.g. [{ date: "2026-05-28", label: "Today", day: "Thu · May 28" }]
 
-GET /api/feed?date=YYYY-MM-DD
-      └─ SELECT … FROM jobs WHERE tier IN ('top','next_best') AND DATE(ranked_at) = date
+GET /api/feed?date=YYYY-MM-DD   (login required)
+      └─ SELECT … FROM user_job_rankings JOIN jobs ON job_id = jobs.id
+         WHERE user_id = <current user> AND tier IN ('top','next_best') AND DATE(ranked_at) = date
          Returns: { topPicks: [Job], nextBest: [Job], syncedAt: string }
 
 DB column → frontend field mapping:
@@ -94,17 +102,12 @@ DB column → frontend field mapping:
   location   → loc
   url_hash   → id   (used as stable React key and track toggle identifier)
   url        → url
-  reason     → reason
+  reason     → reason          (from user_job_rankings)
   fetched_at → posted  (rendered as relative label: "Today", "1d ago", …)
   location   → remote  ("Remote OK" pill if "remote" appears in location, else null)
-  tier_order → tierOrder
+  tier_order → tierOrder       (from user_job_rankings)
   salary     → null    (not stored in DB; field reserved for future enrichment)
 ```
-
-> **Note:** `/api/dates` and `/api/feed` are not yet user-scoped — they still read the global
-> `tier`/`tier_order`/`reason`/`ranked_at` columns on `jobs`, populated by the single global
-> `send_digest.py` run (using `config/criteria.txt`). See "Authentication & Per-User Settings"
-> below for what's been built so far toward making this per-user, and what's still outstanding.
 
 ### Authentication & Per-User Settings
 
@@ -123,6 +126,12 @@ user_criteria
 user_companies
   user_id (FK → users), company
   — companies the user follows; PK is (user_id, company)
+
+user_job_rankings
+  user_id (FK → users), job_id (FK → jobs), tier, tier_order, reason, ranked_at
+  — PK is (user_id, job_id); one row per (user, job) once that job has been ranked
+    ('top' / 'next_best' / 'skip') for that user. The same job can have different
+    rows (different tier/reason) for different users.
 ```
 
 Auth routes (`src/auth.py`, mounted at `/api/auth`):
@@ -143,12 +152,12 @@ GET  /api/companies    → { all: [company...], followed: [company...] }
 PUT  /api/companies    ← { companies: [company...] }       replaces user_companies
 ```
 
-**Status:** Settings UI (`SettingsPage.jsx`) reads/writes these tables and is live for user 1
-(zichenliu9@gmail.com), seeded with their existing `config/criteria.txt` and all 54 companies
-currently in the `jobs` table. However, `/api/dates` and `/api/feed` (and the
-`send_digest.py`/`ranker.py` pipeline) do NOT yet consume `user_criteria` / `user_companies` —
-they still operate on the single global `jobs.tier`/`tier_order`/`reason` columns produced by one
-shared ranking run. Making the feed and digest per-user is the next phase (see To-Do).
+**Status:** Settings UI (`SettingsPage.jsx`) reads/writes `user_criteria`/`user_companies` and is
+live for user 1 (zichenliu9@gmail.com). `/api/dates` and `/api/feed` now read from
+`user_job_rankings`, and `send_digest.py`/`ranker.py` rank each user's unranked jobs against
+their own `user_criteria.criteria_text` and email their own `users.email`. The old global
+`jobs.tier`/`tier_order`/`reason`/`ranked_at`/`digested_at` columns have been removed — for user 1,
+their existing rankings (1,120 jobs) were migrated into `user_job_rankings` as a one-time backfill.
 
 ### Data flow (generate_resume.py)
 
@@ -199,9 +208,7 @@ The date scrubber in the top bar shows only dates for which ranked jobs exist in
 
 - [ ] **Fine-tune resume generation prompt** — iterate on `config/resume_prompt.txt` based on output quality; focus on bullet selection relevance, wording match to JD, and length discipline. The prompt file is intentionally separate so it can be edited without touching code.
 
-- [ ] **Rewire `/api/dates` and `/api/feed` to per-user data** — filter by the logged-in user's `user_companies`, and score against their `user_criteria` instead of the single global `config/criteria.txt` run.
-
-- [ ] **Per-user ranking & digest pipeline** — `send_digest.py`/`ranker.py` currently rank the global job pool once against `config/criteria.txt` and email `RECIPIENT_EMAIL`. Needs to become: for each user, rank their followed companies' jobs against their `user_criteria.criteria_text` and send to their own email.
+- [ ] **Rank the user-1 backlog** — 1,211 jobs predate the per-user pipeline and were never ranked under the old system either (`tier IS NULL`). They'll be picked up by the next `send_digest.py` run as "unranked for user 1" — this first run will be a larger-than-usual Claude batch (likely hits the token-budget truncation fallback in `ranker.py`). Consider bulk-marking them `skip` in `user_job_rankings` first if that's not desired.
 
 - [ ] **Company name dedup** — `jobs.company` has near-duplicate values for the same company (e.g. `Openai`/`OpenAI`, `Google`/`Google DeepMind`, `Primeintellect`/`Prime Intellect`, `Sierra`/`Sierra Studio`, `Gleanwork`/`Glean`, `Metacareers`/`Meta`). Normalize in `parsers.py` so company-following matches reliably.
 
@@ -209,20 +216,20 @@ The date scrubber in the top bar shows only dates for which ranked jobs exist in
 
 ## Ranking Algorithm Design
 
-### Inputs
-- `config/resume.txt` — plain text resume
-- `config/criteria.txt` — free-text description of what you're looking for (role, seniority, industry preferences, deal-breakers, etc.)
-- All undigested jobs (fetched from Gmail but not yet surfaced in a digest), with title + company + description
+### Inputs (per user)
+- `config/resume.txt` — resume (shared across users for now)
+- `user_criteria.criteria_text` — free-text description of what that user is looking for (role, seniority, industry preferences, deal-breakers, etc.)
+- That user's unranked jobs — jobs from companies in their `user_companies` with no row yet in `user_job_rankings` for them, with title + company + description
 
 ### How it works
-Each job is categorized by an LLM (Claude) in a single batched prompt. The prompt includes the resume, the criteria, and the job details, and asks the model to directly assign a tier and a one-line reason — `config/criteria.txt` describes what "top", "next best", and "skip" jobs look like, in the user's own words.
+For each user, their unranked jobs are categorized by an LLM (Claude) in a single batched prompt. The prompt includes the resume, that user's `criteria_text`, and the job details, and asks the model to directly assign a tier and a one-line reason — the criteria text describes what "top", "next best", and "skip" jobs look like, in the user's own words.
 
-Jobs are then split into tiers and written back to the database:
-- **Top** (`tier = 'top'`) — matches the "top" description in `config/criteria.txt`.
-- **Next Best** (`tier = 'next_best'`) — matches the "next best" description in `config/criteria.txt`.
-- **Skip** (`tier = 'skip'`) — matches the "skip" description. Stored but not surfaced in the digest or web app.
+Jobs are then split into tiers and written to `user_job_rankings`:
+- **Top** (`tier = 'top'`) — matches the "top" description in the user's criteria.
+- **Next Best** (`tier = 'next_best'`) — matches the "next best" description.
+- **Skip** (`tier = 'skip'`) — matches the "skip" description. Stored so the job is never re-ranked for this user, but not surfaced in the digest or web app.
 
-Each ranked job also gets `tier_order` (position within its tier, ordered by Claude from strongest to weakest match), `reason` (one-line Claude rationale), and `ranked_at` (timestamp of the ranking run). The web frontend uses these columns to display the day's feed.
+Each ranked row also gets `tier_order` (position within its tier, ordered by Claude from strongest to weakest match), `reason` (one-line Claude rationale), and `ranked_at` (timestamp of the ranking run). The web frontend uses these columns to display the day's feed for the logged-in user.
 
 ### Digest behaviour
 - If Top Options is non-empty: send both sections.
@@ -231,11 +238,11 @@ Each ranked job also gets `tier_order` (position within its tier, ordered by Cla
 
 ### Files
 - `config/resume.txt` — user-maintained
-- `config/criteria.txt` — user-maintained
-- `src/ranker.py` — calls Claude API, returns scored + tiered job list ✅
-- `src/database.py` — `save_ranking()` persists tier/tier_order/reason/ranked_at ✅
-- `src/email_digest.py` — renders tiered results into HTML and sends via Gmail SMTP ✅
-- `api.py` — Flask API serving ranked jobs from Postgres to the frontend ✅
+- `user_criteria` table — per-user, edited via the Settings page
+- `src/ranker.py` — calls Claude API with a given criteria text, returns scored + tiered job list ✅
+- `src/database.py` — `save_user_ranking()` persists rows to `user_job_rankings` ✅
+- `src/email_digest.py` — renders tiered results into HTML, sends via Gmail SMTP to a given recipient ✅
+- `api.py` — Flask API serving each user's ranked jobs from Postgres to the frontend ✅
 - `frontend/` — React app displaying the ranked feed ✅
 
 ---

@@ -88,8 +88,8 @@ def build_html(result: RankerResult) -> str:
 </html>"""
 
 
-def send_digest(result: RankerResult) -> bool:
-    """Build and send the digest email. Returns True if sent, False if skipped (nothing to send)."""
+def send_digest(result: RankerResult, recipient_email: str) -> bool:
+    """Build and send the digest email to recipient_email. Returns True if sent, False if skipped (nothing to send)."""
     if not result.top and not result.next_best:
         logger.info("No jobs to send — skipping digest")
         return False
@@ -97,7 +97,7 @@ def send_digest(result: RankerResult) -> bool:
     if not GMAIL_APP_PASSWORD:
         raise ValueError("GMAIL_APP_PASSWORD is not set in .env")
     if not RECIPIENT_EMAIL:
-        raise ValueError("RECIPIENT_EMAIL is not set in .env")
+        raise ValueError("RECIPIENT_EMAIL (sending account) is not set in .env")
 
     today = datetime.now(timezone.utc).strftime("%b %d")
     subject = f"Job Digest {today} — {len(result.top)} top, {len(result.next_best)} next best"
@@ -105,13 +105,13 @@ def send_digest(result: RankerResult) -> bool:
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From'] = RECIPIENT_EMAIL
-    msg['To'] = RECIPIENT_EMAIL
+    msg['To'] = recipient_email
     msg.attach(MIMEText(build_html(result), 'html'))
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
         server.starttls()
         server.login(RECIPIENT_EMAIL, GMAIL_APP_PASSWORD.replace(' ', ''))
-        server.sendmail(RECIPIENT_EMAIL, RECIPIENT_EMAIL, msg.as_string())
+        server.sendmail(RECIPIENT_EMAIL, recipient_email, msg.as_string())
 
-    logger.info(f"Digest sent to {RECIPIENT_EMAIL} ({len(result.top)} top, {len(result.next_best)} next best)")
+    logger.info(f"Digest sent to {recipient_email} ({len(result.top)} top, {len(result.next_best)} next best)")
     return True

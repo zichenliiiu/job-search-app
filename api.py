@@ -66,17 +66,18 @@ def _job_row_to_dict(row) -> dict:
 
 
 @app.route("/api/dates")
+@login_required
 def get_dates():
-    """Return distinct dates (newest first) when rankings were produced."""
+    """Return distinct dates (newest first) when this user's jobs were ranked."""
     sql = """
         SELECT DISTINCT DATE(ranked_at AT TIME ZONE 'UTC') AS d
-        FROM jobs
-        WHERE tier IN ('top', 'next_best') AND ranked_at IS NOT NULL
+        FROM user_job_rankings
+        WHERE user_id = %s AND tier IN ('top', 'next_best')
         ORDER BY d DESC
         LIMIT 30
     """
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute(sql)
+        cur.execute(sql, (current_user_id(),))
         rows = cur.fetchall()
 
     dates = []
@@ -91,21 +92,23 @@ def get_dates():
 
 
 @app.route("/api/feed")
+@login_required
 def get_feed():
-    """Return top and next_best jobs for the given date (YYYY-MM-DD)."""
+    """Return this user's top and next_best jobs for the given date (YYYY-MM-DD)."""
     date_str = request.args.get("date")
     if not date_str:
         return jsonify({"error": "date parameter required"}), 400
 
     sql = """
-        SELECT url_hash, title, company, location, url, reason, ranked_at, tier_order, tier
-        FROM jobs
-        WHERE tier IN ('top', 'next_best')
-          AND DATE(ranked_at AT TIME ZONE 'UTC') = %s
-        ORDER BY tier, tier_order ASC
+        SELECT j.url_hash, j.title, j.company, j.location, j.url, ujr.reason, ujr.ranked_at, ujr.tier_order, ujr.tier
+        FROM user_job_rankings ujr
+        JOIN jobs j ON j.id = ujr.job_id
+        WHERE ujr.user_id = %s AND ujr.tier IN ('top', 'next_best')
+          AND DATE(ujr.ranked_at AT TIME ZONE 'UTC') = %s
+        ORDER BY ujr.tier, ujr.tier_order ASC
     """
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute(sql, (date_str,))
+        cur.execute(sql, (current_user_id(), date_str))
         rows = cur.fetchall()
 
     top_picks = []
