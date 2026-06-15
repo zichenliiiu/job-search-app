@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
-export default function SettingsPage({ onBack }) {
+export default function SettingsPage() {
   const [topDescription, setTopDescription] = useState('');
   const [nextBestDescription, setNextBestDescription] = useState('');
   const [followed, setFollowed] = useState([]);
@@ -66,11 +66,7 @@ export default function SettingsPage({ onBack }) {
   return (
     <div className="content settings-page">
       <div className="page-head">
-        <button className="btn btn-ghost back-btn" onClick={onBack}>
-          <span className="ic"><ArrowLeft size={14} /></span>
-          Back to feed
-        </button>
-        <h1>Settings</h1>
+        <h1><em>Settings</em></h1>
       </div>
 
       <section className="settings-section">

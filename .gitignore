@@ -36,6 +36,7 @@ eval/runs/
 # Node
 frontend/node_modules/
 frontend/package-lock.json
+frontend/dist/
 
 # IDE
 .vscode/

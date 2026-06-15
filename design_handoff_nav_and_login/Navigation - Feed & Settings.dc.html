@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:#DEDAD1; font-family:'Geist',-apple-system,sans-serif; color:#14130F; -webkit-font-smoothing:antialiased; padding:56px 40px 80px;">
+  <div style="max-width:1180px; margin:0 auto;">
+
+    <!-- ===== Intro ===== -->
+    <div style="margin-bottom:48px;">
+      <div style="font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#6B6A62; margin-bottom:14px;">Apt · Navigation model</div>
+      <h1 style="font-weight:600; font-size:40px; line-height:1.05; letter-spacing:-0.025em; margin:0 0 14px;">Top bar &amp; account menu</h1>
+      <p style="font-size:15px; line-height:1.55; color:#3D3C36; margin:0; max-width:680px;">The feed is the whole product — it gets the full canvas. Settings and Log out live in the account menu, where they belong. Opening Settings switches the top-bar context (the feed's date scrubber gives way to <span style="color:#1F6B47; font-weight:500;">← Back to feed</span>), so it reads as a place you go to, not a panel that slides over.</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- FRAME 0 — PRE-LOGIN (PUBLIC) -->
+    <!-- ============================================================ -->
+    <div style="margin-bottom:30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; color:#1F6B47; background:#E6EFE9; padding:3px 9px; border-radius:5px;">00</span>
+        <span style="font-size:17px; font-weight:600;">Pre-login — public</span>
+        <span style="font-size:13px; color:#6B6A62;">The only door in: logo, a one-line blurb, and Continue with Google.</span>
+      </div>
+    </div>
+    <div data-screen-label="Pre-login" style="background:#FAF8F3; border:1px solid #CFCBC1; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(20,19,15,0.10); margin-bottom:64px; min-height:600px; display:flex; align-items:center; justify-content:center;">
+      <div style="text-align:center; padding:72px 32px; max-width:600px;">
+        <!-- logo lockup -->
+        <div style="display:inline-flex; align-items:center; gap:13px; margin-bottom:44px;">
+          <svg width="38" height="38" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="28" stroke="#14130F" stroke-width="3" fill="none"></circle><circle cx="32" cy="32" r="9" fill="#1F6B47"></circle></svg>
+          <span style="font-family:'Geist',sans-serif; font-style:italic; font-weight:700; font-size:42px; line-height:1; letter-spacing:-0.04em; color:#14130F;">apt<span style="color:#1F6B47;">.</span></span>
+        </div>
+        <!-- headline blurb -->
+        <h2 style="font-family:'Geist',sans-serif; font-weight:600; font-size:52px; line-height:1.04; letter-spacing:-0.03em; color:#14130F; margin:0 0 18px;">Worthy companies, <em style="font-style:italic; color:#1F6B47;">right roles.</em></h2>
+        <p style="font-size:17px; line-height:1.55; color:#3D3C36; margin:0 auto 36px; max-width:460px;">Pick the companies worth your time and describe a great role in your own words. Apt brings back only the openings that clear both.</p>
+        <!-- google button -->
+        <a style="display:inline-flex; align-items:center; gap:11px; background:#fff; border:1px solid #D6D3C8; border-radius:6px; padding:13px 22px; font-family:'Geist',sans-serif; font-size:15px; font-weight:500; color:#14130F; text-decoration:none; cursor:pointer; box-shadow:0 1px 2px rgba(20,19,15,0.05);">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"></path><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"></path><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.997 8.997 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"></path><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"></path></svg>
+          Log in with Google
+        </a>
+        <div style="font-size:12.5px; color:#6B6A62; margin-top:16px;">We only use Google to sign you in — nothing is posted on your behalf.</div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- FRAME 1 — FEED (HOME) -->
+    <!-- ============================================================ -->
+    <div style="margin-bottom:30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; color:#1F6B47; background:#E6EFE9; padding:3px 9px; border-radius:5px;">01</span>
+        <span style="font-size:17px; font-weight:600;">Feed — home</span>
+        <span style="font-size:13px; color:#6B6A62;">Full top bar: brand (links home) · date scrubber · avatar. Cards are exactly today's.</span>
+      </div>
+    </div>
+    <div data-screen-label="Feed" style="background:#FAF8F3; border:1px solid #CFCBC1; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(20,19,15,0.10); margin-bottom:64px;">
+      <!-- top bar -->
+      <div style="height:56px; border-bottom:1px solid #E8E5DC; background:rgba(250,248,243,0.9); display:flex; align-items:center; gap:14px; padding:0 22px;">
+        <div style="font-family:'Geist',sans-serif; font-style:italic; font-weight:700; font-size:24px; letter-spacing:-0.04em; line-height:1; cursor:pointer;">apt<span style="color:#1F6B47;">.</span></div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:14px;">
+          <div style="display:flex; align-items:center; gap:2px; border:1px solid #D6D3C8; border-radius:8px; background:#fff; padding:2px;">
+            <button style="width:28px; height:28px; border:none; background:transparent; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#3D3C36; cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <div style="display:flex; align-items:center; gap:8px; padding:0 8px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B6A62" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span style="font-family:'Geist Mono',monospace; font-size:12px; color:#14130F; font-weight:500; white-space:nowrap;">Thu · Jun 12</span>
+            </div>
+            <button style="width:28px; height:28px; border:none; background:transparent; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#9C9B91; cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+          </div>
+          <div style="width:32px; height:32px; border-radius:999px; background:#1F6B47; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Geist Mono',monospace; font-size:11px; font-weight:600; cursor:pointer;">ZL</div>
+        </div>
+      </div>
+      <!-- content -->
+      <div style="padding:32px 32px 40px;">
+        <!-- page header -->
+        <div style="margin-bottom:22px;">
+          <h2 style="margin:0; font-family:'Geist',sans-serif; font-weight:600; font-size:42px; line-height:1.05; letter-spacing:-0.03em; color:#14130F;"><em style="font-style:italic; color:#1F6B47; font-weight:600;">3</em> openings worth a look today.</h2>
+          <div style="margin-top:8px; font-family:'Geist Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6B6A62;">Last synced 7:02 am</div>
+        </div>
+        <!-- summary legend -->
+        <div style="display:flex; align-items:center; gap:22px; flex-wrap:wrap; margin-bottom:18px; padding:0 4px 18px; border-bottom:1px solid #E8E5DC;">
+          <span style="display:inline-flex; align-items:center; gap:8px; font-size:13px;"><span style="width:8px; height:8px; border-radius:999px; background:#1F6B47;"></span><span style="font-family:'Geist Mono',monospace; font-size:13px; font-weight:500; color:#14130F;">3</span><span style="color:#6B6A62;">top picks</span></span>
+          <span style="display:inline-flex; align-items:center; gap:8px; font-size:13px;"><span style="width:8px; height:8px; border-radius:999px; background:#B8732E;"></span><span style="font-family:'Geist Mono',monospace; font-size:13px; font-weight:500; color:#14130F;">3</span><span style="color:#6B6A62;">next best</span></span>
+          <span style="margin-left:auto; font-family:'Geist Mono',monospace; font-size:11px; color:#6B6A62; text-transform:uppercase; letter-spacing:0.08em;">6 openings</span>
+        </div>
+
+        <!-- Top picks -->
+        <div style="margin-bottom:28px;">
+          <div style="display:flex; align-items:center; gap:12px; padding:0 4px 14px;">
+            <span style="width:3px; height:18px; border-radius:2px; background:#1F6B47; flex:0 0 3px;"></span>
+            <span style="color:#1F6B47; display:inline-flex;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+            <span style="font-size:17px; font-weight:600; color:#14130F; letter-spacing:-0.005em;">Top picks</span>
+            <span style="margin-left:auto; font-family:'Geist Mono',monospace; font-size:11px; color:#6B6A62; text-transform:uppercase; letter-spacing:0.08em;">3 openings</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <!-- Stripe -->
+            <div style="position:relative; background:#fff; border:1px solid #E8E5DC; border-radius:10px; overflow:hidden;">
+              <div style="position:absolute; left:0; right:0; top:0; height:2px; background:#1F6B47;"></div>
+              <div style="padding:18px 22px; display:flex; gap:18px; align-items:flex-end;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:'Geist',sans-serif; font-weight:600; font-size:22px; line-height:1.1; letter-spacing:-0.02em; color:#14130F;">Stripe</div>
+                  <div style="margin-top:4px; font-size:14px; font-weight:500; color:#3D3C36; line-height:1.35;">Senior Product Engineer</div>
+                  <div style="display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#3D3C36;"><span style="color:#9C9B91; display:inline-flex;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Remote · USA</span>
+                    <span style="display:inline-flex; align-items:center; padding:2px 8px; background:#E6EFE9; color:#1F6B47; border-radius:999px; font-family:'Geist Mono',monospace; font-size:11px; font-weight:500;">remote</span>
+                  </div>
+                </div>
+                <a style="flex:0 0 auto; font-family:'Geist',sans-serif; font-size:12.5px; font-weight:500; border-radius:6px; padding:6px 12px; border:1px solid #D6D3C8; background:#fff; color:#14130F; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-decoration:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open posting</a>
+              </div>
+            </div>
+            <!-- Linear -->
+            <div style="position:relative; background:#fff; border:1px solid #E8E5DC; border-radius:10px; overflow:hidden;">
+              <div style="position:absolute; left:0; right:0; top:0; height:2px; background:#1F6B47;"></div>
+              <div style="padding:18px 22px; display:flex; gap:18px; align-items:flex-end;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:'Geist',sans-serif; font-weight:600; font-size:22px; line-height:1.1; letter-spacing:-0.02em; color:#14130F;">Linear</div>
+                  <div style="margin-top:4px; font-size:14px; font-weight:500; color:#3D3C36; line-height:1.35;">Staff Software Engineer, Platform</div>
+                  <div style="display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#3D3C36;"><span style="color:#9C9B91; display:inline-flex;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Remote · Global</span>
+                    <span style="display:inline-flex; align-items:center; padding:2px 8px; background:#E6EFE9; color:#1F6B47; border-radius:999px; font-family:'Geist Mono',monospace; font-size:11px; font-weight:500;">remote</span>
+                  </div>
+                </div>
+                <a style="flex:0 0 auto; font-family:'Geist',sans-serif; font-size:12.5px; font-weight:500; border-radius:6px; padding:6px 12px; border:1px solid #D6D3C8; background:#fff; color:#14130F; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-decoration:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open posting</a>
+              </div>
+            </div>
+            <!-- Vercel -->
+            <div style="position:relative; background:#fff; border:1px solid #E8E5DC; border-radius:10px; overflow:hidden;">
+              <div style="position:absolute; left:0; right:0; top:0; height:2px; background:#1F6B47;"></div>
+              <div style="padding:18px 22px; display:flex; gap:18px; align-items:flex-end;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:'Geist',sans-serif; font-weight:600; font-size:22px; line-height:1.1; letter-spacing:-0.02em; color:#14130F;">Vercel</div>
+                  <div style="margin-top:4px; font-size:14px; font-weight:500; color:#3D3C36; line-height:1.35;">Senior Full-Stack Engineer</div>
+                  <div style="display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#3D3C36;"><span style="color:#9C9B91; display:inline-flex;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Remote · USA / EU</span>
+                    <span style="display:inline-flex; align-items:center; padding:2px 8px; background:#E6EFE9; color:#1F6B47; border-radius:999px; font-family:'Geist Mono',monospace; font-size:11px; font-weight:500;">remote</span>
+                  </div>
+                </div>
+                <a style="flex:0 0 auto; font-family:'Geist',sans-serif; font-size:12.5px; font-weight:500; border-radius:6px; padding:6px 12px; border:1px solid #D6D3C8; background:#fff; color:#14130F; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-decoration:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open posting</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next best -->
+        <div>
+          <div style="display:flex; align-items:center; gap:12px; padding:0 4px 14px;">
+            <span style="width:3px; height:18px; border-radius:2px; background:#B8732E; flex:0 0 3px;"></span>
+            <span style="color:#B8732E; display:inline-flex;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>
+            <span style="font-size:17px; font-weight:600; color:#14130F; letter-spacing:-0.005em;">Next best</span>
+            <span style="margin-left:auto; font-family:'Geist Mono',monospace; font-size:11px; color:#6B6A62; text-transform:uppercase; letter-spacing:0.08em;">3 openings</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <!-- Mercury -->
+            <div style="position:relative; background:#fff; border:1px solid #E8E5DC; border-radius:10px; overflow:hidden;">
+              <div style="position:absolute; left:0; right:0; top:0; height:2px; background:#B8732E;"></div>
+              <div style="padding:18px 22px; display:flex; gap:18px; align-items:flex-end;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:'Geist',sans-serif; font-weight:600; font-size:22px; line-height:1.1; letter-spacing:-0.02em; color:#14130F;">Mercury</div>
+                  <div style="margin-top:4px; font-size:14px; font-weight:500; color:#3D3C36; line-height:1.35;">Backend Engineer, Payments</div>
+                  <div style="display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#3D3C36;"><span style="color:#9C9B91; display:inline-flex;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Remote · USA</span>
+                    <span style="display:inline-flex; align-items:center; padding:2px 8px; background:#E6EFE9; color:#1F6B47; border-radius:999px; font-family:'Geist Mono',monospace; font-size:11px; font-weight:500;">remote</span>
+                  </div>
+                </div>
+                <a style="flex:0 0 auto; font-family:'Geist',sans-serif; font-size:12.5px; font-weight:500; border-radius:6px; padding:6px 12px; border:1px solid #D6D3C8; background:#fff; color:#14130F; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-decoration:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open posting</a>
+              </div>
+            </div>
+            <!-- Notion (hybrid, no remote pill) -->
+            <div style="position:relative; background:#fff; border:1px solid #E8E5DC; border-radius:10px; overflow:hidden;">
+              <div style="position:absolute; left:0; right:0; top:0; height:2px; background:#B8732E;"></div>
+              <div style="padding:18px 22px; display:flex; gap:18px; align-items:flex-end;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:'Geist',sans-serif; font-weight:600; font-size:22px; line-height:1.1; letter-spacing:-0.02em; color:#14130F;">Notion</div>
+                  <div style="margin-top:4px; font-size:14px; font-weight:500; color:#3D3C36; line-height:1.35;">Software Engineer III</div>
+                  <div style="display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#3D3C36;"><span style="color:#9C9B91; display:inline-flex;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Hybrid · SF</span>
+                  </div>
+                </div>
+                <a style="flex:0 0 auto; font-family:'Geist',sans-serif; font-size:12.5px; font-weight:500; border-radius:6px; padding:6px 12px; border:1px solid #D6D3C8; background:#fff; color:#14130F; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-decoration:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open posting</a>
+              </div>
+            </div>
+            <!-- Figma (hybrid, no remote pill) -->
+            <div style="position:relative; background:#fff; border:1px solid #E8E5DC; border-radius:10px; overflow:hidden;">
+              <div style="position:absolute; left:0; right:0; top:0; height:2px; background:#B8732E;"></div>
+              <div style="padding:18px 22px; display:flex; gap:18px; align-items:flex-end;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:'Geist',sans-serif; font-weight:600; font-size:22px; line-height:1.1; letter-spacing:-0.02em; color:#14130F;">Figma</div>
+                  <div style="margin-top:4px; font-size:14px; font-weight:500; color:#3D3C36; line-height:1.35;">Senior Engineer, Growth</div>
+                  <div style="display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#3D3C36;"><span style="color:#9C9B91; display:inline-flex;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Hybrid · NYC</span>
+                  </div>
+                </div>
+                <a style="flex:0 0 auto; font-family:'Geist',sans-serif; font-size:12.5px; font-weight:500; border-radius:6px; padding:6px 12px; border:1px solid #D6D3C8; background:#fff; color:#14130F; display:inline-flex; align-items:center; gap:6px; cursor:pointer; text-decoration:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open posting</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- FRAME 2 — ACCOUNT MENU OPEN -->
+    <!-- ============================================================ -->
+    <div style="margin-bottom:30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; color:#1F6B47; background:#E6EFE9; padding:3px 9px; border-radius:5px;">02</span>
+        <span style="font-size:17px; font-weight:600;">Account menu</span>
+        <span style="font-size:13px; color:#6B6A62;">Settings and Log out live here — one click off the feed, correctly de-emphasized.</span>
+      </div>
+    </div>
+    <div data-screen-label="Account menu" style="position:relative; background:#FAF8F3; border:1px solid #CFCBC1; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(20,19,15,0.10); margin-bottom:64px;">
+      <!-- top bar -->
+      <div style="height:56px; border-bottom:1px solid #E8E5DC; background:rgba(250,248,243,0.9); display:flex; align-items:center; gap:14px; padding:0 22px; position:relative; z-index:2;">
+        <div style="font-family:'Geist',sans-serif; font-style:italic; font-weight:700; font-size:24px; letter-spacing:-0.04em; line-height:1;">apt<span style="color:#1F6B47;">.</span></div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:14px;">
+          <div style="display:flex; align-items:center; gap:2px; border:1px solid #D6D3C8; border-radius:8px; background:#fff; padding:2px;">
+            <button style="width:28px; height:28px; border:none; background:transparent; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#3D3C36;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <div style="display:flex; align-items:center; gap:8px; padding:0 8px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B6A62" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span style="font-family:'Geist Mono',monospace; font-size:12px; color:#14130F; font-weight:500;">Thu · Jun 12</span>
+            </div>
+            <button style="width:28px; height:28px; border:none; background:transparent; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#9C9B91;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+          </div>
+          <div style="width:32px; height:32px; border-radius:999px; background:#1F6B47; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Geist Mono',monospace; font-size:11px; font-weight:600; box-shadow:0 0 0 3px rgba(31,107,71,0.22);">ZL</div>
+        </div>
+      </div>
+
+      <!-- dropdown -->
+      <div style="position:absolute; top:54px; right:22px; z-index:5; width:248px; background:#fff; border:1px solid #E8E5DC; border-radius:12px; box-shadow:0 12px 32px rgba(20,19,15,0.16), 0 0 0 0.5px rgba(20,19,15,0.05); overflow:hidden;">
+        <div style="padding:14px 16px 12px; border-bottom:1px solid #E8E5DC; display:flex; align-items:center; gap:11px;">
+          <div style="width:34px; height:34px; border-radius:999px; background:#1F6B47; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Geist Mono',monospace; font-size:12px; font-weight:600; flex:0 0 34px;">ZL</div>
+          <div style="min-width:0;">
+            <div style="font-size:13px; font-weight:600; color:#14130F; line-height:1.3;">Zichen Liu</div>
+            <div style="font-size:11px; color:#6B6A62; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">zichen@gmail.com</div>
+          </div>
+        </div>
+        <div style="padding:6px;">
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:7px; cursor:pointer; background:#FAF8F3;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3D3C36" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span style="font-size:14px; color:#14130F;">Settings</span>
+          </div>
+          <div style="height:1px; background:#E8E5DC; margin:5px 4px;"></div>
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:7px; cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6A62" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+            <span style="font-size:14px; color:#3D3C36;">Log out</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- dimmed feed hint behind -->
+      <div style="padding:32px 32px 40px; opacity:0.5; pointer-events:none;">
+        <h2 style="margin:0 0 8px; font-family:'Geist',sans-serif; font-weight:600; font-size:42px; line-height:1.05; letter-spacing:-0.03em; color:#14130F;"><em style="font-style:italic; color:#1F6B47; font-weight:600;">3</em> openings worth a look today.</h2>
+        <div style="margin-bottom:24px; font-family:'Geist Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6B6A62;">Last synced 7:02 am</div>
+        <div style="position:relative; background:#fff; border:1px solid #E8E5DC; border-radius:10px; overflow:hidden; margin-bottom:12px;">
+          <div style="position:absolute; left:0; right:0; top:0; height:2px; background:#1F6B47;"></div>
+          <div style="padding:18px 22px; display:flex; gap:18px; align-items:flex-end;">
+            <div style="flex:1;"><div style="font-family:'Geist'; font-weight:600; font-size:22px; line-height:1.1; letter-spacing:-0.02em;">Stripe</div><div style="margin-top:4px; font-size:14px; font-weight:500; color:#3D3C36;">Senior Product Engineer</div></div>
+            <a style="font-size:12.5px; font-weight:500; border-radius:6px; padding:6px 12px; border:1px solid #D6D3C8; background:#fff; color:#14130F;">Open posting</a>
+          </div>
+        </div>
+        <div style="position:relative; background:#fff; border:1px solid #E8E5DC; border-radius:10px; overflow:hidden;">
+          <div style="position:absolute; left:0; right:0; top:0; height:2px; background:#1F6B47;"></div>
+          <div style="padding:18px 22px; display:flex; gap:18px; align-items:flex-end;">
+            <div style="flex:1;"><div style="font-family:'Geist'; font-weight:600; font-size:22px; line-height:1.1; letter-spacing:-0.02em;">Linear</div><div style="margin-top:4px; font-size:14px; font-weight:500; color:#3D3C36;">Staff Software Engineer, Platform</div></div>
+            <a style="font-size:12.5px; font-weight:500; border-radius:6px; padding:6px 12px; border:1px solid #D6D3C8; background:#fff; color:#14130F;">Open posting</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- FRAME 3 — SETTINGS ROUTE -->
+    <!-- ============================================================ -->
+    <div style="margin-bottom:30px;">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; color:#1F6B47; background:#E6EFE9; padding:3px 9px; border-radius:5px;">03</span>
+        <span style="font-size:17px; font-weight:600;">Settings — a place you go</span>
+        <span style="font-size:13px; color:#6B6A62;">Top bar switches context: scrubber out, <span style="color:#1F6B47;">← Back to feed</span> in. Own URL, browser-back works.</span>
+      </div>
+    </div>
+    <div data-screen-label="Settings" style="background:#FAF8F3; border:1px solid #CFCBC1; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(20,19,15,0.10);">
+      <!-- top bar — settings context -->
+      <div style="height:56px; border-bottom:1px solid #E8E5DC; background:rgba(250,248,243,0.9); display:flex; align-items:center; gap:14px; padding:0 22px;">
+        <button style="display:inline-flex; align-items:center; gap:8px; border:none; background:transparent; cursor:pointer; padding:7px 10px 7px 8px; border-radius:7px; color:#14130F;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1F6B47" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+          <span style="font-size:14px; font-weight:500;">Back to feed</span>
+        </button>
+        <div style="width:1px; height:20px; background:#E8E5DC;"></div>
+        <span style="font-family:'Geist Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6B6A62;">Settings</span>
+        <div style="margin-left:auto;">
+          <div style="width:32px; height:32px; border-radius:999px; background:#1F6B47; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Geist Mono',monospace; font-size:11px; font-weight:600;">ZL</div>
+        </div>
+      </div>
+      <!-- content -->
+      <div style="padding:34px 32px 44px;">
+        <h2 style="font-family:'Geist',sans-serif; font-style:italic; font-weight:600; font-size:34px; line-height:1; letter-spacing:-0.03em; margin:0 0 6px;">Settings</h2>
+        <div style="font-size:14px; color:#6B6A62; margin-bottom:28px;">Tune what Apt surfaces. Changes apply to tomorrow's digest.</div>
+
+        <div style="display:flex; flex-direction:column; gap:18px; max-width:720px;">
+          <!-- Match criteria -->
+          <div style="background:#fff; border:1px solid #E8E5DC; border-radius:12px; padding:22px 24px;">
+            <div style="font-size:15px; font-weight:600; margin:0 0 4px;">Match criteria</div>
+            <div style="font-size:13px; color:#6B6A62; margin-bottom:16px;">The plain-language brief the ranker reads against every opening.</div>
+            <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+              <label style="font-size:12px; font-weight:500; color:#3D3C36;">What you're looking for</label>
+              <div style="font-family:'Geist',sans-serif; font-size:14px; padding:11px 13px; background:#fff; border:1px solid #D6D3C8; border-radius:6px; color:#14130F; line-height:1.5;">Senior / staff backend or platform roles. TypeScript, Postgres, distributed systems. Remote-only, $180k+ base. Payments or infra domains preferred.</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <label style="font-size:12px; font-weight:500; color:#3D3C36;">What to avoid</label>
+              <div style="font-family:'Geist',sans-serif; font-size:14px; padding:11px 13px; background:#fff; border:1px solid #D6D3C8; border-radius:6px; color:#14130F; line-height:1.5;">Mid-level titles, on-site or hybrid mandates, early-stage pre-seed, agency / consultancy roles.</div>
+            </div>
+          </div>
+
+          <!-- Followed companies -->
+          <div style="background:#fff; border:1px solid #E8E5DC; border-radius:12px; padding:22px 24px;">
+            <div style="font-size:15px; font-weight:600; margin:0 0 4px;">Followed companies</div>
+            <div style="font-size:13px; color:#6B6A62; margin-bottom:16px;">Always check these for new openings, even off-criteria.</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+              <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 8px 6px 12px; background:#FAF8F3; border:1px solid #D6D3C8; border-radius:999px; font-size:13px; color:#14130F;">Stripe<span style="display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:999px; background:#E8E5DC; color:#6B6A62; cursor:pointer;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span></span>
+              <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 8px 6px 12px; background:#FAF8F3; border:1px solid #D6D3C8; border-radius:999px; font-size:13px; color:#14130F;">Linear<span style="display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:999px; background:#E8E5DC; color:#6B6A62; cursor:pointer;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span></span>
+              <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 8px 6px 12px; background:#FAF8F3; border:1px solid #D6D3C8; border-radius:999px; font-size:13px; color:#14130F;">Vercel<span style="display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:999px; background:#E8E5DC; color:#6B6A62; cursor:pointer;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span></span>
+              <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 8px 6px 12px; background:#FAF8F3; border:1px solid #D6D3C8; border-radius:999px; font-size:13px; color:#14130F;">Mercury<span style="display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:999px; background:#E8E5DC; color:#6B6A62; cursor:pointer;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span></span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <div style="flex:1; max-width:280px; font-family:'Geist',sans-serif; font-size:13px; padding:9px 12px; background:#fff; border:1px solid #D6D3C8; border-radius:6px; color:#9C9B91;">Add a company…</div>
+              <button style="font-size:13px; font-weight:500; border-radius:6px; padding:9px 14px; border:1px solid #D6D3C8; background:#fff; color:#14130F; cursor:pointer; display:inline-flex; align-items:center; gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Add</button>
+            </div>
+          </div>
+
+          <!-- Save bar -->
+          <div style="display:flex; align-items:center; gap:12px; padding-top:4px;">
+            <button style="font-size:14px; font-weight:500; border-radius:6px; padding:11px 18px; border:none; background:#1F6B47; color:#fff; cursor:pointer;">Save changes</button>
+            <button style="font-size:14px; font-weight:500; border-radius:6px; padding:11px 16px; border:none; background:transparent; color:#6B6A62; cursor:pointer;">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -32,10 +32,17 @@ config/
   job_description.txt  Job description to tailor resume against — read by resume_generator.py
   resume_prompt.txt    Prompt instructions for resume tailoring — edit to iterate on behavior
 
-frontend/              React web app (Vite) — displays ranked openings
+frontend/              React web app (Vite + react-router-dom) — displays ranked openings
   src/
-    App.jsx            Top-level shell; auth check, then fetches dates/feed; switches feed/settings views
-    components/        TopBar, PageHeader, SummaryRow, Section, JobCard, LoginPage, SettingsPage
+    App.jsx            Router root; AuthContext, RequireAuth/PublicOnlyRoute guards, AppLayout (fetches
+                       dates, renders TopBar+Outlet), FeedRoute (reads :date param, fetches feed)
+    components/
+      TopBar.jsx       Sticky header; feed context shows brand link + date scrubber, settings context
+                       shows Back-to-feed + "Settings" label; always includes AccountMenu
+      AccountMenu.jsx  Avatar button (initials) + dropdown (Settings nav, Log out)
+      LoginPage.jsx    Pre-login marketing page at / — logo, headline, Google OAuth button, trust line
+      SettingsPage.jsx Ranking criteria (top/next-best) + followed companies; now a route at /app/settings
+      PageHeader, SummaryRow, Section, JobCard
     styles/            tokens.css (design tokens), app.css (view styles)
   public/favicon.svg
   index.html / vite.config.js / package.json
@@ -194,7 +201,14 @@ cd frontend && npm run dev
 
 Then open `http://localhost:5173`. Vite proxies all `/api/*` requests to Flask, so no CORS configuration is needed.
 
-The date scrubber in the top bar shows only dates for which ranked jobs exist in the database. If the database is empty the feed shows blank sections.
+**Routes:**
+- `/` — pre-login marketing page (redirects to `/app/feed` if already signed in)
+- `/app/feed` — today's digest (most recent ranked date)
+- `/app/feed/:date` — a specific day's digest; date scrubber prev/next navigate between these URLs
+- `/app/settings` — ranking criteria + followed companies
+- Unauthenticated requests to `/app/*` redirect to `/?return_to=<path>`
+
+The date scrubber shows only dates for which ranked jobs exist in the database. If the database is empty the feed shows blank sections.
 
 ---
 
