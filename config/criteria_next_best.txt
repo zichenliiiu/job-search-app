@@ -1,0 +1,25 @@
+The user is a Product Strategy professional with 7 years of experience at McKinsey (as a
+management consultant), Gem
+(high-growth B2B SaaS, in a Business Operations role ), and Atlassian (in a Product Strategy role).
+The user would like to pivot to Product Management.
+Considering that the user has no direct Product Management experience, they are also open
+to continue working in Strategy roles (including Business Operations) supporting Product or Engineering, or Strategy roles
+that serves across functions of the company (Product, Engineering, and GTM). Chief of Staff roles
+are relevant too.
+
+A "next best" job looks like the below:
+- Jobs with years of experience requirement that's within the users' years of experience (7 years)
+- Chief of Staff roles that only support go-to-market (sometimes abbreviated as "GTM"),
+or sub functions within go-to-market such as Sales, Customer Success
+
+A job should NOT be "next best" if any of the following apply:
+- years of experience requirement is more than 20% above what the user has
+- Product management roles that specifically require prior Product Management experience, and not open to
+candidates with background similar to but not exactly product management
+- Strategy roles that support GTM functions specifically, e.g., GTM Strategy and Operations
+- Roles that are in the following functions (or support the following functions):
+partnerships, corporate development, customer success, people function (e.g., HR), Finance
+(sometimes labeled "Strategic Finance"), product operations ("Strategy and Operations" are exempted
+from this)
+- Roles that are specified to be in a region that the user cannot work from, ie, the role is
+not in San Francisco Bay Area, or New York, not remote either.

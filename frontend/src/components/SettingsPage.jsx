@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 
 export default function SettingsPage({ onBack }) {
-  const [criteriaText, setCriteriaText] = useState('');
+  const [topDescription, setTopDescription] = useState('');
+  const [nextBestDescription, setNextBestDescription] = useState('');
   const [followed, setFollowed] = useState([]);
   const [untracked, setUntracked] = useState([]);
   const [trackedNames, setTrackedNames] = useState([]);
@@ -16,7 +17,8 @@ export default function SettingsPage({ onBack }) {
       fetch('/api/criteria', { credentials: 'include' }).then(r => r.json()),
       fetch('/api/companies', { credentials: 'include' }).then(r => r.json()),
     ]).then(([criteria, companies]) => {
-      setCriteriaText(criteria.criteria_text || '');
+      setTopDescription(criteria.top_description || '');
+      setNextBestDescription(criteria.next_best_description || '');
       setFollowed(companies.followed || []);
       setUntracked(companies.untracked || []);
       setTrackedNames(companies.tracked || []);
@@ -45,7 +47,7 @@ export default function SettingsPage({ onBack }) {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ criteria_text: criteriaText }),
+        body: JSON.stringify({ top_description: topDescription, next_best_description: nextBestDescription }),
       }),
       fetch('/api/companies', {
         method: 'PUT',
@@ -73,12 +75,20 @@ export default function SettingsPage({ onBack }) {
 
       <section className="settings-section">
         <h2>Ranking criteria</h2>
-        <p className="settings-hint">Describe what "top", "next best", and "skip" jobs look like to you.</p>
+        <p className="settings-hint">Describe what your "top" and "next best" jobs look like. Anything that doesn't match either will be skipped.</p>
+        <h3>Top</h3>
         <textarea
-          value={criteriaText}
-          onChange={e => setCriteriaText(e.target.value)}
-          rows={14}
-          placeholder="Describe the roles you're looking for..."
+          value={topDescription}
+          onChange={e => setTopDescription(e.target.value)}
+          rows={7}
+          placeholder="Describe the roles that are the best fit for you..."
+        />
+        <h3>Next best</h3>
+        <textarea
+          value={nextBestDescription}
+          onChange={e => setNextBestDescription(e.target.value)}
+          rows={7}
+          placeholder="Describe the roles that are a good but not ideal fit..."
         />
       </section>
 

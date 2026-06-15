@@ -23,7 +23,8 @@ from src.ranker import rank_jobs
 TEST_JOBS_PATH   = Path(__file__).parent / "test_jobs.json"
 GROUND_TRUTH_PATH = Path(__file__).parent / "ground_truth.json"
 RUNS_DIR          = Path(__file__).parent / "runs"
-CRITERIA_PATH     = Path(__file__).parent.parent / "config" / "criteria.txt"
+CRITERIA_TOP_PATH      = Path(__file__).parent.parent / "config" / "criteria_top.txt"
+CRITERIA_NEXT_BEST_PATH = Path(__file__).parent.parent / "config" / "criteria_next_best.txt"
 
 
 def load_test_jobs() -> list[Job]:
@@ -88,8 +89,13 @@ def main():
     with open(GROUND_TRUTH_PATH, encoding='utf-8') as f:
         ground_truth = json.load(f)
 
-    criteria_snapshot = CRITERIA_PATH.read_text(encoding='utf-8') if CRITERIA_PATH.exists() else ''
-    criteria_mtime = datetime.fromtimestamp(CRITERIA_PATH.stat().st_mtime, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S') if CRITERIA_PATH.exists() else 'unknown'
+    criteria_snapshot = {
+        "top": CRITERIA_TOP_PATH.read_text(encoding='utf-8') if CRITERIA_TOP_PATH.exists() else '',
+        "next_best": CRITERIA_NEXT_BEST_PATH.read_text(encoding='utf-8') if CRITERIA_NEXT_BEST_PATH.exists() else '',
+    }
+    criteria_mtime = datetime.fromtimestamp(
+        max(CRITERIA_TOP_PATH.stat().st_mtime, CRITERIA_NEXT_BEST_PATH.stat().st_mtime), tz=timezone.utc
+    ).strftime('%Y-%m-%d %H:%M:%S') if CRITERIA_TOP_PATH.exists() and CRITERIA_NEXT_BEST_PATH.exists() else 'unknown'
 
     print(f"\nRunning ranker on {len(jobs)} test jobs...")
     result = rank_jobs(jobs)
@@ -112,7 +118,7 @@ def main():
         f"{'':^{col[4]}}"
     )
     divider = '-' * len(header)
-    print(f"\nEVAL RUN {run_timestamp.strftime('%Y-%m-%d %H:%M:%S')}  |  criteria.txt modified: {criteria_mtime}")
+    print(f"\nEVAL RUN {run_timestamp.strftime('%Y-%m-%d %H:%M:%S')}  |  criteria modified: {criteria_mtime}")
     print(divider)
     print(header)
     print(divider)

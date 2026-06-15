@@ -230,11 +230,20 @@ a { color: inherit; text-decoration: none; }
 }
 .settings-hint { font-size: 12.5px; color: var(--ink-3); margin: 0 0 14px; }
 
+.settings-section h3 {
+  font-family: var(--font-display); font-size: 14px; font-weight: 600;
+  color: var(--ink-1); margin: 0 0 6px;
+}
+
 .settings-section textarea,
 .company-add input[type="text"] {
   width: 100%; font-family: var(--font-sans); font-size: 13px; color: var(--ink-1);
   background: var(--paper); border: 1px solid var(--line-1); border-radius: 6px;
   padding: 10px 12px; resize: vertical;
+}
+
+.settings-section textarea {
+  margin-bottom: 14px;
 }
 .settings-section textarea:focus,
 .company-add input[type="text"]:focus {

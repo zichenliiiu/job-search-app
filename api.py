@@ -144,7 +144,11 @@ def get_criteria():
 @login_required
 def put_criteria():
     data = request.get_json(force=True) or {}
-    save_user_criteria(current_user_id(), criteria_text=data.get("criteria_text", ""))
+    save_user_criteria(
+        current_user_id(),
+        top_description=data.get("top_description", ""),
+        next_best_description=data.get("next_best_description", ""),
+    )
     return jsonify({"ok": True})
 
 

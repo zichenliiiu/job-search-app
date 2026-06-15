@@ -1,13 +1,15 @@
 # Claude-powered job ranker.
 # Called by send_digest.py after fetching unranked jobs for a user from the database.
 #
-#   rank_jobs(jobs, criteria_text)   sends all jobs to Claude in a single batched prompt,
-#                     categorizes each against config/resume.txt + the given criteria text
-#                     (defaults to config/criteria.txt if not provided),
+#   rank_jobs(jobs, top_description, next_best_description)
+#                     sends all jobs to Claude in a single batched prompt,
+#                     categorizes each against config/resume.txt + the given top/next-best
+#                     descriptions (defaulting to config/criteria_top.txt and
+#                     config/criteria_next_best.txt if not provided),
 #                     and returns a RankerResult with two tiers:
-#                       .top       — matches the "top" description in the criteria
-#                       .next_best — matches the "next best" description in the criteria
-#                     (jobs matching "skip" are dropped)
+#                       .top       — matches top_description
+#                       .next_best — matches next_best_description
+#                     (jobs matching neither, i.e. "skip", are dropped)
 
 from __future__ import annotations
 
@@ -60,18 +62,25 @@ def _build_job_block(index: int, job: Job, desc_cap: int) -> str:
     return f"{header}\n{description}" if description else header
 
 
-def rank_jobs(jobs: list[Job], criteria_text: str | None = None) -> RankerResult:
+def rank_jobs(
+    jobs: list[Job],
+    top_description: str | None = None,
+    next_best_description: str | None = None,
+) -> RankerResult:
     if not jobs:
         return RankerResult(top=[], next_best=[])
 
     resume = _load_text('config/resume.txt')
-    criteria = criteria_text if criteria_text is not None else _load_text('config/criteria.txt')
+    top_desc = top_description if top_description is not None else _load_text('config/criteria_top.txt')
+    next_best_desc = (
+        next_best_description if next_best_description is not None else _load_text('config/criteria_next_best.txt')
+    )
 
     desc_cap = DEFAULT_DESC_CAP
     job_blocks = [_build_job_block(i, j, desc_cap) for i, j in enumerate(jobs)]
     jobs_text = "\n\n".join(job_blocks)
 
-    fixed_tokens = _estimate_tokens(resume) + _estimate_tokens(criteria) + 800
+    fixed_tokens = _estimate_tokens(resume) + _estimate_tokens(top_desc) + _estimate_tokens(next_best_desc) + 800
     total_tokens = fixed_tokens + _estimate_tokens(jobs_text)
 
     if total_tokens > TOKEN_BUDGET:
@@ -91,17 +100,23 @@ def rank_jobs(jobs: list[Job], criteria_text: str | None = None) -> RankerResult
                 f"minimum description length (~{total_tokens:,} estimated tokens). Results may be incomplete."
             )
 
-    system_prompt = f"""You are evaluating job postings for an user. Categorize each job posting based on the user's criteria. Follow the users criteria precisely, do not deviate. 
+    system_prompt = f"""You are evaluating job postings for an user. Categorize each job posting into "top", "next_best", or "skip" based on the user's descriptions of each tier below. Follow the user's descriptions precisely, do not deviate.
 
-## How the user describe criteria for each category
-{criteria}
+## What a "top" job looks like to the user
+{top_desc}
+
+## What a "next best" job looks like to the user
+{next_best_desc}
+
+## "skip"
+Any job that does not clearly match the "top" or "next best" descriptions above should be categorized as "skip".
 """
 
     user_prompt = f"""Categorize the jobs below. Return ONLY a JSON array — no prose, no markdown fences.
 
 Each element must have:
 - "index": the job's [N] number (integer)
-- "tier": one of "top", "next_best", or "skip", per the user's criteria above
+- "tier": one of "top", "next_best", or "skip", per the user's descriptions above
 - "reason": one sentence explaining the categorization (be specific — cite role fit, skills match, seniority, location, or deal-breakers)
 
 Within each tier, order the elements from strongest to weakest match per the user's stated order of preference.

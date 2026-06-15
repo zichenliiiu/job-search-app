@@ -62,8 +62,9 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE_USER_CRITERIA_TABLE = """
 CREATE TABLE IF NOT EXISTS user_criteria (
-    user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    criteria_text TEXT NOT NULL DEFAULT ''
+    user_id               INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    top_description       TEXT NOT NULL DEFAULT '',
+    next_best_description TEXT NOT NULL DEFAULT ''
 );
 """
 
@@ -100,7 +101,79 @@ def create_tables() -> None:
         cur.execute(CREATE_JOBS_TABLE)
         cur.execute(CREATE_USER_COMPANIES_TABLE)
         cur.execute(CREATE_USER_JOB_RANKINGS_TABLE)
+
+        cur.execute("ALTER TABLE user_criteria ADD COLUMN IF NOT EXISTS top_description TEXT NOT NULL DEFAULT ''")
+        cur.execute("ALTER TABLE user_criteria ADD COLUMN IF NOT EXISTS next_best_description TEXT NOT NULL DEFAULT ''")
+
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name = 'user_criteria' AND column_name = 'criteria_text'"
+        )
+        has_criteria_text = cur.fetchone() is not None
+
+    if has_criteria_text:
+        _migrate_criteria_text_to_descriptions()
     logger.info("Database tables ready")
+
+
+def _migrate_criteria_text_to_descriptions() -> None:
+    """One-time migration: split each user's combined criteria_text into top_description and
+    next_best_description via Claude, then drop the legacy criteria_text column.
+    """
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT user_id, criteria_text FROM user_criteria WHERE criteria_text IS NOT NULL AND criteria_text <> ''")
+        rows = cur.fetchall()
+
+    for user_id, criteria_text in rows:
+        top_description, next_best_description = _split_criteria_text(criteria_text)
+        save_user_criteria(user_id, top_description=top_description, next_best_description=next_best_description)
+        logger.info(f"Migrated combined criteria for user {user_id} into top/next-best descriptions")
+
+    with _connect() as conn, conn.cursor() as cur:
+        cur.execute("ALTER TABLE user_criteria DROP COLUMN criteria_text")
+    logger.info("Dropped legacy criteria_text column")
+
+
+def _split_criteria_text(criteria_text: str) -> tuple[str, str]:
+    """Use Claude to split a combined ranking-criteria description (which described "top",
+    "next best", and "skip" tiers together) into separate top_description and
+    next_best_description strings.
+    """
+    import json as _json
+
+    import anthropic
+
+    from config.config import ANTHROPIC_API_KEY
+
+    prompt = f"""The text below is a user's description of what makes a job posting "top", "next best", \
+or "skip" for their job search, all mixed together. Split it into two self-contained \
+descriptions:
+
+- "top_description": everything describing what a "top" job looks like to this user
+- "next_best_description": everything describing what a "next best" job looks like to this user
+
+Any "skip" criteria (deal-breakers, exclusions) should be folded into BOTH descriptions as \
+exclusion notes, since each description should stand on its own. Preserve the user's original \
+wording and intent as closely as possible — do not summarize or add new criteria.
+
+Return ONLY a JSON object with keys "top_description" and "next_best_description" — no prose, \
+no markdown fences.
+
+## User's original combined criteria
+{criteria_text}"""
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    response = client.messages.create(
+        model="claude-opus-4-7",
+        max_tokens=4096,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = next((b.text for b in response.content if b.type == "text"), "").strip()
+    if raw.startswith("```"):
+        raw = "\n".join(raw.split("\n")[1:])
+        raw = raw.rsplit("```", 1)[0].strip()
+
+    data = _json.loads(raw)
+    return data["top_description"], data["next_best_description"]
 
 
 def get_all_users() -> list[dict]:
@@ -152,27 +225,31 @@ def get_user_by_id(user_id: int) -> dict | None:
 
 
 def get_user_criteria(user_id: int) -> dict:
-    """Return {criteria_text} for the user, defaulting to an empty string."""
+    """Return {top_description, next_best_description} for the user, defaulting to empty strings."""
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT criteria_text FROM user_criteria WHERE user_id = %s", (user_id,))
+        cur.execute(
+            "SELECT top_description, next_best_description FROM user_criteria WHERE user_id = %s",
+            (user_id,),
+        )
         row = cur.fetchone()
 
     if row is None:
-        return {"criteria_text": ""}
-    return {"criteria_text": row[0]}
+        return {"top_description": "", "next_best_description": ""}
+    return {"top_description": row[0], "next_best_description": row[1]}
 
 
-def save_user_criteria(user_id: int, criteria_text: str) -> None:
-    """Upsert the user's ranking criteria text."""
+def save_user_criteria(user_id: int, top_description: str, next_best_description: str) -> None:
+    """Upsert the user's ranking criteria descriptions."""
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO user_criteria (user_id, criteria_text)
-            VALUES (%s, %s)
+            INSERT INTO user_criteria (user_id, top_description, next_best_description)
+            VALUES (%s, %s, %s)
             ON CONFLICT (user_id) DO UPDATE
-            SET criteria_text = EXCLUDED.criteria_text
+            SET top_description = EXCLUDED.top_description,
+                next_best_description = EXCLUDED.next_best_description
             """,
-            (user_id, criteria_text),
+            (user_id, top_description, next_best_description),
         )
     logger.info(f"Saved criteria for user {user_id}")
 

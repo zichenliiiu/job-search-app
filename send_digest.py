@@ -42,8 +42,10 @@ def main():
             logger.info(f"{email}: no followed companies, skipping")
             continue
 
-        criteria_text = get_user_criteria(user_id)["criteria_text"]
-        if not criteria_text.strip():
+        criteria = get_user_criteria(user_id)
+        top_description = criteria["top_description"]
+        next_best_description = criteria["next_best_description"]
+        if not top_description.strip() and not next_best_description.strip():
             logger.info(f"{email}: no ranking criteria set, skipping")
             continue
 
@@ -53,7 +55,7 @@ def main():
             continue
 
         logger.info(f"{email}: ranking {len(jobs)} jobs...")
-        result = rank_jobs(jobs, criteria_text=criteria_text)
+        result = rank_jobs(jobs, top_description=top_description, next_best_description=next_best_description)
         logger.info(f"{email}: ranked {len(result.top)} top, {len(result.next_best)} next best")
         save_user_ranking(user_id, result, jobs)
 
