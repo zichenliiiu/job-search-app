@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import anthropic
+
 from config.config import GMAIL_APP_PASSWORD, RECIPIENT_EMAIL
 from src.ranker import RankedJob, RankerResult
 
@@ -88,6 +90,41 @@ def build_html(result: RankerResult) -> str:
 </html>"""
 
 
+_SUBJECT_PROMPT = """\
+Write a short, punchy email subject line for a daily job search digest.
+
+Rules:
+- Must include: the date ({date}), number of top matches ({top}), number of next-best matches ({next_best})
+- Tone: energetic but not cringe — like a sharp friend, not a recruiter
+- One emoji max, used tastefully
+- Under 70 characters
+- No quotes, no explanation — just the subject line
+
+Examples of the style (do not repeat these):
+- 🎯 3 hot leads + 5 on deck — Jun 17
+- Your picks for Jun 17: 3 strong, 5 decent
+- Jun 17 digest — 3 worth applying, 5 to watch
+"""
+
+
+def _generate_subject(date: str, top: int, next_best: int) -> str:
+    fallback = f"🎯 {top} hot leads + {next_best} on deck — Your job picks for {date}"
+    try:
+        client = anthropic.Anthropic()
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=60,
+            messages=[{
+                "role": "user",
+                "content": _SUBJECT_PROMPT.format(date=date, top=top, next_best=next_best),
+            }],
+        )
+        return message.content[0].text.strip()
+    except Exception:
+        logger.warning("Failed to generate subject via Claude, using fallback")
+        return fallback
+
+
 def send_digest(result: RankerResult, recipient_email: str) -> bool:
     """Build and send the digest email to recipient_email. Returns True if sent, False if skipped (nothing to send)."""
     if not result.top and not result.next_best:
@@ -100,7 +137,7 @@ def send_digest(result: RankerResult, recipient_email: str) -> bool:
         raise ValueError("RECIPIENT_EMAIL (sending account) is not set in .env")
 
     today = datetime.now(timezone.utc).strftime("%b %d")
-    subject = f"Job Digest {today} — {len(result.top)} top, {len(result.next_best)} next best"
+    subject = _generate_subject(today, len(result.top), len(result.next_best))
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
