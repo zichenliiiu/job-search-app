@@ -14,11 +14,9 @@ Job search with a filter, not a firehose. Follow the companies you care about, d
 
 _Product decisions_
 - **Company list is user-curated, not AI-assisted** — building a target company list is a thinking exercise best done in a chat interface; no reason to rebuild ChatGPT inside this app.
-- **[Decision]** — [what you chose and why; what you'd lose with the alternative]
 
 _Technical architecture_
 - **Fetch, rank, and serve are fully decoupled** — each stage writes to Postgres before handing off, so a failure in any one doesn't cascade. Ranking picks up exactly where it left off; nothing is reprocessed or lost.
-- **[Decision]** — [what you chose and why; what you'd lose with the alternative]
 
 _Growth / experimentation_
 - **Subject line is Claude-generated fresh each morning** — avoids the "same sender, same subject" inbox blindness that kills open rates on recurring digests.
