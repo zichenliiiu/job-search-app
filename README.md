@@ -2,6 +2,8 @@
 
 Job search with a filter, not a firehose. Follow the companies you care about, describe the role you want in plain English, and get a daily digest with only what clears the bar — no noise, no manual sourcing.
 
+---
+
 ## Features
 
 - **Per-user settings** — each user sets their own ranking criteria (free text) and followed companies via a settings page
@@ -13,7 +15,7 @@ Job search with a filter, not a firehose. Follow the companies you care about, d
 ## Decisions & Tradeoffs
 
 _Product decisions_
-- **Company list is user-curated, not AI-assisted** — building a target company list is a thinking exercise best done in a chat interface; no reason to rebuild ChatGPT inside this app.
+- **Company list is user-provided, not generated in app** — building a target company list is a thinking exercise best done in a chat interface; Prompt users to bring the curated list, no reason to rebuild ChatGPT inside this app.
 
 _Technical architecture_
 - **Fetch, rank, and serve are fully decoupled** — each stage writes to Postgres before handing off, so a failure in any one doesn't cascade. Ranking picks up exactly where it left off; nothing is reprocessed or lost.
