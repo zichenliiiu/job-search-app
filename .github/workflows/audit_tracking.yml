@@ -1,0 +1,30 @@
+name: Audit Company Tracking
+
+on:
+  schedule:
+    - cron: '0 8 1,15 * *'   # 1st and 15th of each month, 1am PT (UTC-7)
+  workflow_dispatch:           # allow manual trigger from GitHub UI
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tracking audit
+        run: python audit_tracking.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
