@@ -28,7 +28,9 @@ CREATE_COMPANIES_TABLE = """
 CREATE TABLE IF NOT EXISTS companies (
     id            SERIAL PRIMARY KEY,
     name          TEXT UNIQUE NOT NULL,
+    career_site_url TEXT,
     tracked       BOOLEAN NOT NULL DEFAULT FALSE,
+    tracking_working BOOLEAN,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 """
@@ -104,6 +106,8 @@ def create_tables() -> None:
 
         cur.execute("ALTER TABLE user_criteria ADD COLUMN IF NOT EXISTS top_description TEXT NOT NULL DEFAULT ''")
         cur.execute("ALTER TABLE user_criteria ADD COLUMN IF NOT EXISTS next_best_description TEXT NOT NULL DEFAULT ''")
+        cur.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS career_site_url TEXT")
+        cur.execute("ALTER TABLE companies ADD COLUMN IF NOT EXISTS tracking_working BOOLEAN")
 
         cur.execute(
             "SELECT 1 FROM information_schema.columns WHERE table_name = 'user_criteria' AND column_name = 'criteria_text'"
@@ -306,9 +310,9 @@ def register_companies(names: list[str]) -> None:
 def get_all_companies() -> list[dict]:
     """Return all companies, alphabetically, with their tracked status."""
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT id, name, tracked FROM companies ORDER BY name")
+        cur.execute("SELECT id, name, career_site_url, tracked, tracking_working FROM companies ORDER BY name")
         rows = cur.fetchall()
-    return [{"id": r[0], "name": r[1], "tracked": r[2]} for r in rows]
+    return [{"id": r[0], "name": r[1], "career_site_url": r[2], "tracked": r[3], "tracking_working": r[4]} for r in rows]
 
 
 def add_company(name: str, tracked: bool = False) -> None:
