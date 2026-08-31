@@ -147,6 +147,10 @@ Within each tier, order the elements from strongest to weakest match per the use
         raw = "\n".join(raw.split("\n")[1:])
         raw = raw.rsplit("```", 1)[0].strip()
 
+    start, end = raw.find("["), raw.rfind("]")
+    if start != -1 and end != -1:
+        raw = raw[start:end + 1]
+
     categorized = json.loads(raw)
 
     top, next_best = [], []
